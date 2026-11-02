@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PixKeyRegistration.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">payment-domain</a> &gt; <a href="index.source.html" class="el_package">com.instapay.payment.domain.pixkey</a> &gt; <span class="el_source">PixKeyRegistration.java</span></div><h1>PixKeyRegistration.java</h1><pre class="source lang-java linenums">package com.instapay.payment.domain.pixkey;
+
+import com.instapay.payment.domain.account.Account;
+import com.instapay.payment.domain.account.AccountId;
+import com.instapay.payment.domain.account.AccountStatus;
+import com.instapay.payment.domain.shared.DomainException;
+import java.time.Instant;
+import java.util.Objects;
+
+/** A key bound to an account. Uniqueness of the key itself is enforced by the repository. */
+public record PixKeyRegistration(PixKey key, AccountId account, Instant createdAt) {
+
+  /** DICT limit for individuals (pessoa física). */
+  public static final int MAX_KEYS_PER_ACCOUNT = 5;
+
+<span class="fc" id="L16">  public PixKeyRegistration {</span>
+<span class="fc" id="L17">    Objects.requireNonNull(key, &quot;key&quot;);</span>
+<span class="fc" id="L18">    Objects.requireNonNull(account, &quot;account&quot;);</span>
+<span class="fc" id="L19">    Objects.requireNonNull(createdAt, &quot;createdAt&quot;);</span>
+<span class="fc" id="L20">  }</span>
+
+  public static PixKeyRegistration register(
+      PixKey key, Account account, int keysAlreadyOnAccount, Instant now) {
+<span class="fc" id="L24">    ensureCanHoldAnotherKey(account, keysAlreadyOnAccount);</span>
+<span class="fc bfc" id="L25" title="All 4 branches covered.">    if (key.type() == PixKeyType.CPF &amp;&amp; !key.value().equals(account.holder().cpf().value())) {</span>
+<span class="fc" id="L26">      throw new DomainException(&quot;pixkey.cpf_mismatch&quot;, &quot;CPF key must be the account holder's CPF&quot;);</span>
+    }
+<span class="fc" id="L28">    return new PixKeyRegistration(key, account.id(), now);</span>
+  }
+
+  public static void ensureCanHoldAnotherKey(Account account, int keysAlreadyOnAccount) {
+<span class="fc bfc" id="L32" title="All 2 branches covered.">    if (account.status() != AccountStatus.ACTIVE) {</span>
+<span class="fc" id="L33">      throw new DomainException(&quot;pixkey.account_not_active&quot;, &quot;Only active accounts can hold keys&quot;);</span>
+    }
+<span class="fc bfc" id="L35" title="All 2 branches covered.">    if (keysAlreadyOnAccount &gt;= MAX_KEYS_PER_ACCOUNT) {</span>
+<span class="fc" id="L36">      throw new DomainException(</span>
+          &quot;pixkey.limit_reached&quot;, &quot;Account already has &quot; + MAX_KEYS_PER_ACCOUNT + &quot; keys&quot;);
+    }
+<span class="fc" id="L39">  }</span>
+
+  public void ensureOwnedBy(AccountId actor) {
+<span class="fc bfc" id="L42" title="All 2 branches covered.">    if (!account.equals(actor)) {</span>
+<span class="fc" id="L43">      throw new DomainException(&quot;pixkey.not_owner&quot;, &quot;Key does not belong to this account&quot;);</span>
+    }
+<span class="fc" id="L45">  }</span>
+
+  public PixKeyRegistration movedTo(AccountId newAccount, Instant now) {
+<span class="fc" id="L48">    return new PixKeyRegistration(key, newAccount, now);</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

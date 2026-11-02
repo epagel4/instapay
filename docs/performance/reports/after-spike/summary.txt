@@ -1,0 +1,20 @@
+load average at end: 4,84 12,71 48,60
+---- Global Information -------------------------------------------------------------|---Total---|-----OK----|----KO----
+> request count                                                                      |    39,000 |    39,000 |         -
+> min response time (ms)                                                             |         1 |         1 |         -
+> max response time (ms)                                                             |       496 |       496 |         -
+> mean response time (ms)                                                            |         9 |         9 |         -
+> response time std deviation (ms)                                                   |        28 |        28 |         -
+> response time 50th percentile (ms)                                                 |         3 |         3 |         -
+> response time 75th percentile (ms)                                                 |         5 |         5 |         -
+> response time 95th percentile (ms)                                                 |        21 |        21 |         -
+> response time 99th percentile (ms)                                                 |       166 |       166 |         -
+> mean throughput (rps)                                                              |       325 |       325 |         -
+---- Response Time Distribution ----------------------------------------------------------------------------------------
+> OK: t < 800 ms                                                                                         39,000   (100%)
+> OK: 800 ms <= t < 1200 ms                                                                                   0     (0%)
+> OK: t >= 1200 ms                                                                                            0     (0%)
+> KO                                                                                                          0     (0%)
+========================================================================================================================
+
+Global: percentage of failed events is less than 1.0 : true (actual : 0.0)

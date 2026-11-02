@@ -1,0 +1,529 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.instapay.settlement.adapters.SettlementFlowTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-11-02T16:09:55.948Z" hostname="MacBook-Pro-de-Eduardo.local" time="2.157">
+  <properties/>
+  <testcase name="settlesValidRequestAndExposesDecision()" classname="com.instapay.settlement.adapters.SettlementFlowTest" time="1.474"/>
+  <testcase name="replyContinuesTheTraceOfTheRequest()" classname="com.instapay.settlement.adapters.SettlementFlowTest" time="0.224"/>
+  <testcase name="expiredRequestIsRejectedSoTheSenderCanCompensateSafely()" classname="com.instapay.settlement.adapters.SettlementFlowTest" time="0.112"/>
+  <testcase name="unknownInstitutionIsRejected()" classname="com.instapay.settlement.adapters.SettlementFlowTest" time="0.114"/>
+  <testcase name="duplicateRequestRepublishesTheSameDecisionWithoutDecidingAgain()" classname="com.instapay.settlement.adapters.SettlementFlowTest" time="0.229"/>
+  <system-out><![CDATA[13:09:46.465 [Test worker] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.instapay.settlement.adapters.SettlementFlowTest]: SettlementFlowTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+13:09:46.637 [Test worker] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.instapay.settlement.adapters.SettlementServiceApplication for test class com.instapay.settlement.adapters.SettlementFlowTest
+13:09:46.897 [Test worker] INFO org.testcontainers.images.PullPolicy -- Image pull policy will be performed by: DefaultPullPolicy()
+13:09:46.903 [Test worker] INFO org.testcontainers.utility.ImageNameSubstitutor -- Image name substitution will be performed by: DefaultImageNameSubstitutor (composite of 'ConfigurationFileImageNameSubstitutor' and 'PrefixingImageNameSubstitutor')
+13:09:46.917 [Test worker] INFO org.testcontainers.DockerClientFactory -- Testcontainers version: 1.21.4
+13:09:47.495 [Test worker] INFO org.testcontainers.dockerclient.DockerClientProviderStrategy -- Found Docker environment with Docker accessed via Unix socket (/Users/epeagel/.docker/run/docker.sock)
+13:09:47.496 [Test worker] INFO org.testcontainers.DockerClientFactory -- Docker host IP address is localhost
+13:09:47.516 [Test worker] INFO org.testcontainers.DockerClientFactory -- Connected to docker: 
+  Server Version: 29.9.2
+  API Version: 1.56
+  Operating System: Docker Desktop
+  Total Memory: 7934 MB
+  Labels: 
+    com.docker.desktop.address=unix:///Users/epeagel/Library/Containers/com.docker.docker/Data/docker-cli.sock
+13:09:47.738 [Test worker] INFO tc.testcontainers/ryuk:0.12.0 -- Creating container for image: testcontainers/ryuk:0.12.0
+13:09:47.999 [Test worker] INFO tc.testcontainers/ryuk:0.12.0 -- Container testcontainers/ryuk:0.12.0 is starting: 956af143e1929a6c61455c381b1a3396a5afb6102a4098ec5cc322fce287f017
+13:09:48.319 [Test worker] INFO tc.testcontainers/ryuk:0.12.0 -- Container testcontainers/ryuk:0.12.0 started in PT0.580987S
+13:09:48.324 [Test worker] INFO org.testcontainers.utility.RyukResourceReaper -- Ryuk started - will monitor and terminate Testcontainers containers on JVM exit
+13:09:48.324 [Test worker] INFO org.testcontainers.DockerClientFactory -- Checking the system...
+13:09:48.325 [Test worker] INFO org.testcontainers.DockerClientFactory -- ✔︎ Docker server version should be at least 1.6.0
+13:09:48.325 [Test worker] INFO tc.postgres:16-alpine -- Creating container for image: postgres:16-alpine
+13:09:48.412 [Test worker] INFO tc.postgres:16-alpine -- Container postgres:16-alpine is starting: 3d9d69d0b341c23e8b5f3e0f10a378994120780ac76c2f74d876889ecb80f8fc
+13:09:49.727 [Test worker] INFO tc.postgres:16-alpine -- Container postgres:16-alpine started in PT1.401996S
+13:09:49.728 [Test worker] INFO tc.postgres:16-alpine -- Container is started (JDBC URL: jdbc:postgresql://localhost:54159/test?loggerLevel=OFF)
+13:09:49.729 [Test worker] INFO tc.apache/kafka:3.9.1 -- Creating container for image: apache/kafka:3.9.1
+13:09:49.824 [Test worker] INFO tc.apache/kafka:3.9.1 -- Container apache/kafka:3.9.1 is starting: 88d3273ff39dd25c52199f0bf8691c3b74c17b0ecebc06a4d149b1da12a98f53
+13:09:52.267 [Test worker] INFO tc.apache/kafka:3.9.1 -- Container apache/kafka:3.9.1 started in PT2.538007S
+13:09:52.514 [virtual-44] INFO org.apache.kafka.clients.consumer.ConsumerConfig -- ConsumerConfig values: 
+	allow.auto.create.topics = true
+	auto.commit.interval.ms = 5000
+	auto.include.jmx.reporter = true
+	auto.offset.reset = earliest
+	bootstrap.servers = [localhost:54160]
+	check.crcs = true
+	client.dns.lookup = use_all_dns_ips
+	client.id = consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1
+	client.rack = 
+	connections.max.idle.ms = 540000
+	default.api.timeout.ms = 60000
+	enable.auto.commit = true
+	enable.metrics.push = true
+	exclude.internal.topics = true
+	fetch.max.bytes = 52428800
+	fetch.max.wait.ms = 500
+	fetch.min.bytes = 1
+	group.id = test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27
+	group.instance.id = null
+	group.protocol = classic
+	group.remote.assignor = null
+	heartbeat.interval.ms = 3000
+	interceptor.classes = []
+	internal.leave.group.on.close = true
+	internal.throw.on.fetch.stable.offset.unsupported = false
+	isolation.level = read_uncommitted
+	key.deserializer = class org.apache.kafka.common.serialization.StringDeserializer
+	max.partition.fetch.bytes = 1048576
+	max.poll.interval.ms = 300000
+	max.poll.records = 500
+	metadata.max.age.ms = 500
+	metadata.recovery.strategy = none
+	metric.reporters = []
+	metrics.num.samples = 2
+	metrics.recording.level = INFO
+	metrics.sample.window.ms = 30000
+	partition.assignment.strategy = [class org.apache.kafka.clients.consumer.RangeAssignor, class org.apache.kafka.clients.consumer.CooperativeStickyAssignor]
+	receive.buffer.bytes = 65536
+	reconnect.backoff.max.ms = 1000
+	reconnect.backoff.ms = 50
+	request.timeout.ms = 30000
+	retry.backoff.max.ms = 1000
+	retry.backoff.ms = 100
+	sasl.client.callback.handler.class = null
+	sasl.jaas.config = null
+	sasl.kerberos.kinit.cmd = /usr/bin/kinit
+	sasl.kerberos.min.time.before.relogin = 60000
+	sasl.kerberos.service.name = null
+	sasl.kerberos.ticket.renew.jitter = 0.05
+	sasl.kerberos.ticket.renew.window.factor = 0.8
+	sasl.login.callback.handler.class = null
+	sasl.login.class = null
+	sasl.login.connect.timeout.ms = null
+	sasl.login.read.timeout.ms = null
+	sasl.login.refresh.buffer.seconds = 300
+	sasl.login.refresh.min.period.seconds = 60
+	sasl.login.refresh.window.factor = 0.8
+	sasl.login.refresh.window.jitter = 0.05
+	sasl.login.retry.backoff.max.ms = 10000
+	sasl.login.retry.backoff.ms = 100
+	sasl.mechanism = GSSAPI
+	sasl.oauthbearer.clock.skew.seconds = 30
+	sasl.oauthbearer.expected.audience = null
+	sasl.oauthbearer.expected.issuer = null
+	sasl.oauthbearer.header.urlencode = false
+	sasl.oauthbearer.jwks.endpoint.refresh.ms = 3600000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.max.ms = 10000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.ms = 100
+	sasl.oauthbearer.jwks.endpoint.url = null
+	sasl.oauthbearer.scope.claim.name = scope
+	sasl.oauthbearer.sub.claim.name = sub
+	sasl.oauthbearer.token.endpoint.url = null
+	security.protocol = PLAINTEXT
+	security.providers = null
+	send.buffer.bytes = 131072
+	session.timeout.ms = 45000
+	socket.connection.setup.timeout.max.ms = 30000
+	socket.connection.setup.timeout.ms = 10000
+	ssl.cipher.suites = null
+	ssl.enabled.protocols = [TLSv1.2, TLSv1.3]
+	ssl.endpoint.identification.algorithm = https
+	ssl.engine.factory.class = null
+	ssl.key.password = null
+	ssl.keymanager.algorithm = SunX509
+	ssl.keystore.certificate.chain = null
+	ssl.keystore.key = null
+	ssl.keystore.location = null
+	ssl.keystore.password = null
+	ssl.keystore.type = JKS
+	ssl.protocol = TLSv1.3
+	ssl.provider = null
+	ssl.secure.random.implementation = null
+	ssl.trustmanager.algorithm = PKIX
+	ssl.truststore.certificates = null
+	ssl.truststore.location = null
+	ssl.truststore.password = null
+	ssl.truststore.type = JKS
+	value.deserializer = class org.apache.kafka.common.serialization.StringDeserializer
+
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.16)
+
+2026-11-02T13:09:52.848-03:00  INFO 57716 --- [settlement-service] [    Test worker] [                                                 ] c.i.s.adapters.SettlementFlowTest        : Starting SettlementFlowTest using Java 21.0.13 with PID 57716 (started by epeagel in /Users/epeagel/Documents/Projetos/instapay/settlement-service/settlement-adapters)
+2026-11-02T13:09:52.851-03:00  INFO 57716 --- [settlement-service] [    Test worker] [                                                 ] c.i.s.adapters.SettlementFlowTest        : No active profile set, falling back to 1 default profile: "default"
+2026-11-02T13:09:53.306-03:00  WARN 57716 --- [settlement-service] [     virtual-44] [                                                 ] org.apache.kafka.clients.NetworkClient   : [Consumer clientId=consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1, groupId=test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27] The metadata response from the cluster reported a recoverable issue with correlation id 2 : {settlement.results=UNKNOWN_TOPIC_OR_PARTITION}
+2026-11-02T13:09:53.309-03:00  INFO 57716 --- [settlement-service] [     virtual-44] [                                                 ] org.apache.kafka.clients.Metadata        : [Consumer clientId=consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1, groupId=test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27] Cluster ID: 4L6g3nShT-eMCtK--X86sw
+2026-11-02T13:09:53.422-03:00  INFO 57716 --- [settlement-service] [     virtual-44] [                                                 ] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1, groupId=test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27] Discovered group coordinator localhost:54160 (id: 2147483646 rack: null)
+2026-11-02T13:09:53.431-03:00  INFO 57716 --- [settlement-service] [     virtual-44] [                                                 ] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1, groupId=test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27] (Re-)joining group
+2026-11-02T13:09:53.454-03:00  INFO 57716 --- [settlement-service] [     virtual-44] [                                                 ] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1, groupId=test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27] Request joining group due to: need to re-join with the given member-id: consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1-ec4ba25a-0908-4b29-abf2-a2e6c8d18716
+2026-11-02T13:09:53.454-03:00  INFO 57716 --- [settlement-service] [     virtual-44] [                                                 ] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1, groupId=test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27] (Re-)joining group
+2026-11-02T13:09:53.467-03:00  INFO 57716 --- [settlement-service] [     virtual-44] [                                                 ] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1, groupId=test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27] Successfully joined group with generation Generation{generationId=1, memberId='consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1-ec4ba25a-0908-4b29-abf2-a2e6c8d18716', protocol='range'}
+2026-11-02T13:09:53.473-03:00  INFO 57716 --- [settlement-service] [     virtual-44] [                                                 ] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1, groupId=test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27] Finished assignment for group at generation 1: {consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1-ec4ba25a-0908-4b29-abf2-a2e6c8d18716=Assignment(partitions=[settlement.results-0])}
+2026-11-02T13:09:53.499-03:00  INFO 57716 --- [settlement-service] [     virtual-44] [                                                 ] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1, groupId=test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27] Successfully synced group in generation Generation{generationId=1, memberId='consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1-ec4ba25a-0908-4b29-abf2-a2e6c8d18716', protocol='range'}
+2026-11-02T13:09:53.500-03:00  INFO 57716 --- [settlement-service] [     virtual-44] [                                                 ] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1, groupId=test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27] Notifying assignor about the new Assignment(partitions=[settlement.results-0])
+2026-11-02T13:09:53.503-03:00  INFO 57716 --- [settlement-service] [     virtual-44] [                                                 ] k.c.c.i.ConsumerRebalanceListenerInvoker : [Consumer clientId=consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1, groupId=test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27] Adding newly assigned partitions: settlement.results-0
+2026-11-02T13:09:53.515-03:00  INFO 57716 --- [settlement-service] [     virtual-44] [                                                 ] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1, groupId=test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27] Found no committed offset for partition settlement.results-0
+2026-11-02T13:09:53.528-03:00  INFO 57716 --- [settlement-service] [     virtual-44] [                                                 ] o.a.k.c.c.internals.SubscriptionState    : [Consumer clientId=consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1, groupId=test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27] Resetting offset for partition settlement.results-0 to position FetchPosition{offset=0, offsetEpoch=Optional.empty, currentLeader=LeaderAndEpoch{leader=Optional[localhost:54160 (id: 1 rack: null)], epoch=0}}.
+2026-11-02T13:09:54.124-03:00  INFO 57716 --- [settlement-service] [    Test worker] [                                                 ] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 0 (http)
+2026-11-02T13:09:54.140-03:00  INFO 57716 --- [settlement-service] [    Test worker] [                                                 ] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-11-02T13:09:54.140-03:00  INFO 57716 --- [settlement-service] [    Test worker] [                                                 ] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.55]
+2026-11-02T13:09:54.176-03:00  INFO 57716 --- [settlement-service] [    Test worker] [                                                 ] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-11-02T13:09:54.177-03:00  INFO 57716 --- [settlement-service] [    Test worker] [                                                 ] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 1305 ms
+2026-11-02T13:09:54.528-03:00  INFO 57716 --- [settlement-service] [    Test worker] [                                                 ] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-11-02T13:09:54.724-03:00  INFO 57716 --- [settlement-service] [    Test worker] [                                                 ] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@42339fcb
+2026-11-02T13:09:54.726-03:00  INFO 57716 --- [settlement-service] [    Test worker] [                                                 ] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-11-02T13:09:54.763-03:00  INFO 57716 --- [settlement-service] [    Test worker] [                                                 ] org.flywaydb.core.FlywayExecutor         : Database: jdbc:postgresql://localhost:54159/test?loggerLevel=OFF (PostgreSQL 16.15)
+2026-11-02T13:09:54.802-03:00  INFO 57716 --- [settlement-service] [    Test worker] [                                                 ] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "public"."flyway_schema_history" does not exist yet
+2026-11-02T13:09:54.805-03:00  INFO 57716 --- [settlement-service] [    Test worker] [                                                 ] o.f.core.internal.command.DbValidate     : Successfully validated 1 migration (execution time 00:00.016s)
+2026-11-02T13:09:54.821-03:00  INFO 57716 --- [settlement-service] [    Test worker] [                                                 ] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "public"."flyway_schema_history" ...
+2026-11-02T13:09:54.872-03:00  INFO 57716 --- [settlement-service] [    Test worker] [                                                 ] o.f.core.internal.command.DbMigrate      : Current version of schema "public": << Empty Schema >>
+2026-11-02T13:09:54.877-03:00  INFO 57716 --- [settlement-service] [    Test worker] [                                                 ] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "1 - settlement"
+2026-11-02T13:09:54.896-03:00  INFO 57716 --- [settlement-service] [    Test worker] [                                                 ] o.f.core.internal.command.DbMigrate      : Successfully applied 1 migration to schema "public", now at version v1 (execution time 00:00.008s)
+2026-11-02T13:09:55.533-03:00  INFO 57716 --- [settlement-service] [    Test worker] [                                                 ] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 2 endpoints beneath base path '/actuator'
+2026-11-02T13:09:55.718-03:00  INFO 57716 --- [settlement-service] [    Test worker] [                                                 ] o.a.k.clients.admin.AdminClientConfig    : AdminClientConfig values: 
+	auto.include.jmx.reporter = true
+	bootstrap.controllers = []
+	bootstrap.servers = [localhost:54160]
+	client.dns.lookup = use_all_dns_ips
+	client.id = settlement-service-admin-0
+	connections.max.idle.ms = 300000
+	default.api.timeout.ms = 60000
+	enable.metrics.push = true
+	metadata.max.age.ms = 300000
+	metadata.recovery.strategy = none
+	metric.reporters = []
+	metrics.num.samples = 2
+	metrics.recording.level = INFO
+	metrics.sample.window.ms = 30000
+	receive.buffer.bytes = 65536
+	reconnect.backoff.max.ms = 1000
+	reconnect.backoff.ms = 50
+	request.timeout.ms = 30000
+	retries = 2147483647
+	retry.backoff.max.ms = 1000
+	retry.backoff.ms = 100
+	sasl.client.callback.handler.class = null
+	sasl.jaas.config = null
+	sasl.kerberos.kinit.cmd = /usr/bin/kinit
+	sasl.kerberos.min.time.before.relogin = 60000
+	sasl.kerberos.service.name = null
+	sasl.kerberos.ticket.renew.jitter = 0.05
+	sasl.kerberos.ticket.renew.window.factor = 0.8
+	sasl.login.callback.handler.class = null
+	sasl.login.class = null
+	sasl.login.connect.timeout.ms = null
+	sasl.login.read.timeout.ms = null
+	sasl.login.refresh.buffer.seconds = 300
+	sasl.login.refresh.min.period.seconds = 60
+	sasl.login.refresh.window.factor = 0.8
+	sasl.login.refresh.window.jitter = 0.05
+	sasl.login.retry.backoff.max.ms = 10000
+	sasl.login.retry.backoff.ms = 100
+	sasl.mechanism = GSSAPI
+	sasl.oauthbearer.clock.skew.seconds = 30
+	sasl.oauthbearer.expected.audience = null
+	sasl.oauthbearer.expected.issuer = null
+	sasl.oauthbearer.header.urlencode = false
+	sasl.oauthbearer.jwks.endpoint.refresh.ms = 3600000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.max.ms = 10000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.ms = 100
+	sasl.oauthbearer.jwks.endpoint.url = null
+	sasl.oauthbearer.scope.claim.name = scope
+	sasl.oauthbearer.sub.claim.name = sub
+	sasl.oauthbearer.token.endpoint.url = null
+	security.protocol = PLAINTEXT
+	security.providers = null
+	send.buffer.bytes = 131072
+	socket.connection.setup.timeout.max.ms = 30000
+	socket.connection.setup.timeout.ms = 10000
+	ssl.cipher.suites = null
+	ssl.enabled.protocols = [TLSv1.2, TLSv1.3]
+	ssl.endpoint.identification.algorithm = https
+	ssl.engine.factory.class = null
+	ssl.key.password = null
+	ssl.keymanager.algorithm = SunX509
+	ssl.keystore.certificate.chain = null
+	ssl.keystore.key = null
+	ssl.keystore.location = null
+	ssl.keystore.password = null
+	ssl.keystore.type = JKS
+	ssl.protocol = TLSv1.3
+	ssl.provider = null
+	ssl.secure.random.implementation = null
+	ssl.trustmanager.algorithm = PKIX
+	ssl.truststore.certificates = null
+	ssl.truststore.location = null
+	ssl.truststore.password = null
+	ssl.truststore.type = JKS
+
+2026-11-02T13:09:55.741-03:00  INFO 57716 --- [settlement-service] [    Test worker] [                                                 ] o.a.kafka.common.utils.AppInfoParser     : Kafka version: 3.9.2
+2026-11-02T13:09:55.742-03:00  INFO 57716 --- [settlement-service] [    Test worker] [                                                 ] o.a.kafka.common.utils.AppInfoParser     : Kafka commitId: 5e9866f43ab8e7e4
+2026-11-02T13:09:55.742-03:00  INFO 57716 --- [settlement-service] [    Test worker] [                                                 ] o.a.kafka.common.utils.AppInfoParser     : Kafka startTimeMs: 1793635795741
+2026-11-02T13:09:55.781-03:00  INFO 57716 --- [settlement-service] [    Test worker] [                                                 ] o.springframework.kafka.core.KafkaAdmin  : Topic 'settlement.results' exists but has a different partition count: 1 not 3, increasing if the broker supports it
+2026-11-02T13:09:55.868-03:00  INFO 57716 --- [settlement-service] [service-admin-0] [                                                 ] o.a.kafka.common.utils.AppInfoParser     : App info kafka.admin.client for settlement-service-admin-0 unregistered
+2026-11-02T13:09:55.871-03:00  INFO 57716 --- [settlement-service] [service-admin-0] [                                                 ] o.apache.kafka.common.metrics.Metrics    : Metrics scheduler closed
+2026-11-02T13:09:55.871-03:00  INFO 57716 --- [settlement-service] [service-admin-0] [                                                 ] o.apache.kafka.common.metrics.Metrics    : Closing reporter org.apache.kafka.common.metrics.JmxReporter
+2026-11-02T13:09:55.872-03:00  INFO 57716 --- [settlement-service] [service-admin-0] [                                                 ] o.apache.kafka.common.metrics.Metrics    : Metrics reporters closed
+2026-11-02T13:09:55.884-03:00  INFO 57716 --- [settlement-service] [    Test worker] [                                                 ] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 54177 (http) with context path '/'
+2026-11-02T13:09:55.899-03:00  INFO 57716 --- [settlement-service] [    Test worker] [                                                 ] o.a.k.clients.consumer.ConsumerConfig    : ConsumerConfig values: 
+	allow.auto.create.topics = true
+	auto.commit.interval.ms = 5000
+	auto.include.jmx.reporter = true
+	auto.offset.reset = earliest
+	bootstrap.servers = [localhost:54160]
+	check.crcs = true
+	client.dns.lookup = use_all_dns_ips
+	client.id = consumer-settlement-service-2
+	client.rack = 
+	connections.max.idle.ms = 540000
+	default.api.timeout.ms = 60000
+	enable.auto.commit = false
+	enable.metrics.push = true
+	exclude.internal.topics = true
+	fetch.max.bytes = 52428800
+	fetch.max.wait.ms = 500
+	fetch.min.bytes = 1
+	group.id = settlement-service
+	group.instance.id = null
+	group.protocol = classic
+	group.remote.assignor = null
+	heartbeat.interval.ms = 3000
+	interceptor.classes = []
+	internal.leave.group.on.close = true
+	internal.throw.on.fetch.stable.offset.unsupported = false
+	isolation.level = read_uncommitted
+	key.deserializer = class org.apache.kafka.common.serialization.StringDeserializer
+	max.partition.fetch.bytes = 1048576
+	max.poll.interval.ms = 300000
+	max.poll.records = 500
+	metadata.max.age.ms = 300000
+	metadata.recovery.strategy = none
+	metric.reporters = []
+	metrics.num.samples = 2
+	metrics.recording.level = INFO
+	metrics.sample.window.ms = 30000
+	partition.assignment.strategy = [class org.apache.kafka.clients.consumer.RangeAssignor, class org.apache.kafka.clients.consumer.CooperativeStickyAssignor]
+	receive.buffer.bytes = 65536
+	reconnect.backoff.max.ms = 1000
+	reconnect.backoff.ms = 50
+	request.timeout.ms = 30000
+	retry.backoff.max.ms = 1000
+	retry.backoff.ms = 100
+	sasl.client.callback.handler.class = null
+	sasl.jaas.config = null
+	sasl.kerberos.kinit.cmd = /usr/bin/kinit
+	sasl.kerberos.min.time.before.relogin = 60000
+	sasl.kerberos.service.name = null
+	sasl.kerberos.ticket.renew.jitter = 0.05
+	sasl.kerberos.ticket.renew.window.factor = 0.8
+	sasl.login.callback.handler.class = null
+	sasl.login.class = null
+	sasl.login.connect.timeout.ms = null
+	sasl.login.read.timeout.ms = null
+	sasl.login.refresh.buffer.seconds = 300
+	sasl.login.refresh.min.period.seconds = 60
+	sasl.login.refresh.window.factor = 0.8
+	sasl.login.refresh.window.jitter = 0.05
+	sasl.login.retry.backoff.max.ms = 10000
+	sasl.login.retry.backoff.ms = 100
+	sasl.mechanism = GSSAPI
+	sasl.oauthbearer.clock.skew.seconds = 30
+	sasl.oauthbearer.expected.audience = null
+	sasl.oauthbearer.expected.issuer = null
+	sasl.oauthbearer.header.urlencode = false
+	sasl.oauthbearer.jwks.endpoint.refresh.ms = 3600000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.max.ms = 10000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.ms = 100
+	sasl.oauthbearer.jwks.endpoint.url = null
+	sasl.oauthbearer.scope.claim.name = scope
+	sasl.oauthbearer.sub.claim.name = sub
+	sasl.oauthbearer.token.endpoint.url = null
+	security.protocol = PLAINTEXT
+	security.providers = null
+	send.buffer.bytes = 131072
+	session.timeout.ms = 45000
+	socket.connection.setup.timeout.max.ms = 30000
+	socket.connection.setup.timeout.ms = 10000
+	ssl.cipher.suites = null
+	ssl.enabled.protocols = [TLSv1.2, TLSv1.3]
+	ssl.endpoint.identification.algorithm = https
+	ssl.engine.factory.class = null
+	ssl.key.password = null
+	ssl.keymanager.algorithm = SunX509
+	ssl.keystore.certificate.chain = null
+	ssl.keystore.key = null
+	ssl.keystore.location = null
+	ssl.keystore.password = null
+	ssl.keystore.type = JKS
+	ssl.protocol = TLSv1.3
+	ssl.provider = null
+	ssl.secure.random.implementation = null
+	ssl.trustmanager.algorithm = PKIX
+	ssl.truststore.certificates = null
+	ssl.truststore.location = null
+	ssl.truststore.password = null
+	ssl.truststore.type = JKS
+	value.deserializer = class org.apache.kafka.common.serialization.StringDeserializer
+
+2026-11-02T13:09:55.900-03:00  INFO 57716 --- [settlement-service] [    Test worker] [                                                 ] o.a.k.c.t.i.KafkaMetricsCollector        : initializing Kafka metrics collector
+2026-11-02T13:09:55.902-03:00  INFO 57716 --- [settlement-service] [    Test worker] [                                                 ] o.a.kafka.common.utils.AppInfoParser     : Kafka version: 3.9.2
+2026-11-02T13:09:55.903-03:00  INFO 57716 --- [settlement-service] [    Test worker] [                                                 ] o.a.kafka.common.utils.AppInfoParser     : Kafka commitId: 5e9866f43ab8e7e4
+2026-11-02T13:09:55.903-03:00  INFO 57716 --- [settlement-service] [    Test worker] [                                                 ] o.a.kafka.common.utils.AppInfoParser     : Kafka startTimeMs: 1793635795902
+2026-11-02T13:09:55.908-03:00  INFO 57716 --- [settlement-service] [    Test worker] [                                                 ] o.a.k.c.c.i.ClassicKafkaConsumer         : [Consumer clientId=consumer-settlement-service-2, groupId=settlement-service] Subscribed to topic(s): settlement.requests
+2026-11-02T13:09:55.922-03:00  INFO 57716 --- [settlement-service] [ntainer#0-0-C-1] [                                                 ] org.apache.kafka.clients.Metadata        : [Consumer clientId=consumer-settlement-service-2, groupId=settlement-service] Cluster ID: 4L6g3nShT-eMCtK--X86sw
+2026-11-02T13:09:55.922-03:00  INFO 57716 --- [settlement-service] [ntainer#0-0-C-1] [                                                 ] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-settlement-service-2, groupId=settlement-service] Discovered group coordinator localhost:54160 (id: 2147483646 rack: null)
+2026-11-02T13:09:55.923-03:00  INFO 57716 --- [settlement-service] [ntainer#0-0-C-1] [                                                 ] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-settlement-service-2, groupId=settlement-service] (Re-)joining group
+2026-11-02T13:09:55.927-03:00  INFO 57716 --- [settlement-service] [ntainer#0-0-C-1] [                                                 ] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-settlement-service-2, groupId=settlement-service] Request joining group due to: need to re-join with the given member-id: consumer-settlement-service-2-a8669e25-e669-4c3e-b441-7e97d7141355
+2026-11-02T13:09:55.927-03:00  INFO 57716 --- [settlement-service] [ntainer#0-0-C-1] [                                                 ] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-settlement-service-2, groupId=settlement-service] (Re-)joining group
+2026-11-02T13:09:55.929-03:00  INFO 57716 --- [settlement-service] [ntainer#0-0-C-1] [                                                 ] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-settlement-service-2, groupId=settlement-service] Successfully joined group with generation Generation{generationId=1, memberId='consumer-settlement-service-2-a8669e25-e669-4c3e-b441-7e97d7141355', protocol='range'}
+2026-11-02T13:09:55.930-03:00  INFO 57716 --- [settlement-service] [ntainer#0-0-C-1] [                                                 ] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-settlement-service-2, groupId=settlement-service] Finished assignment for group at generation 1: {consumer-settlement-service-2-a8669e25-e669-4c3e-b441-7e97d7141355=Assignment(partitions=[settlement.requests-0, settlement.requests-1, settlement.requests-2])}
+2026-11-02T13:09:55.932-03:00  INFO 57716 --- [settlement-service] [ntainer#0-0-C-1] [                                                 ] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-settlement-service-2, groupId=settlement-service] Successfully synced group in generation Generation{generationId=1, memberId='consumer-settlement-service-2-a8669e25-e669-4c3e-b441-7e97d7141355', protocol='range'}
+2026-11-02T13:09:55.932-03:00  INFO 57716 --- [settlement-service] [ntainer#0-0-C-1] [                                                 ] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-settlement-service-2, groupId=settlement-service] Notifying assignor about the new Assignment(partitions=[settlement.requests-0, settlement.requests-1, settlement.requests-2])
+2026-11-02T13:09:55.932-03:00  INFO 57716 --- [settlement-service] [ntainer#0-0-C-1] [                                                 ] k.c.c.i.ConsumerRebalanceListenerInvoker : [Consumer clientId=consumer-settlement-service-2, groupId=settlement-service] Adding newly assigned partitions: settlement.requests-0, settlement.requests-1, settlement.requests-2
+2026-11-02T13:09:55.936-03:00  INFO 57716 --- [settlement-service] [ntainer#0-0-C-1] [                                                 ] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-settlement-service-2, groupId=settlement-service] Found no committed offset for partition settlement.requests-0
+2026-11-02T13:09:55.936-03:00  INFO 57716 --- [settlement-service] [ntainer#0-0-C-1] [                                                 ] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-settlement-service-2, groupId=settlement-service] Found no committed offset for partition settlement.requests-2
+2026-11-02T13:09:55.936-03:00  INFO 57716 --- [settlement-service] [ntainer#0-0-C-1] [                                                 ] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-settlement-service-2, groupId=settlement-service] Found no committed offset for partition settlement.requests-1
+2026-11-02T13:09:55.938-03:00  INFO 57716 --- [settlement-service] [    Test worker] [                                                 ] c.i.s.adapters.SettlementFlowTest        : Started SettlementFlowTest in 3.42 seconds (process running for 15.207)
+2026-11-02T13:09:55.941-03:00  INFO 57716 --- [settlement-service] [ntainer#0-0-C-1] [                                                 ] o.a.k.c.c.internals.SubscriptionState    : [Consumer clientId=consumer-settlement-service-2, groupId=settlement-service] Resetting offset for partition settlement.requests-0 to position FetchPosition{offset=0, offsetEpoch=Optional.empty, currentLeader=LeaderAndEpoch{leader=Optional[localhost:54160 (id: 1 rack: null)], epoch=0}}.
+2026-11-02T13:09:55.941-03:00  INFO 57716 --- [settlement-service] [ntainer#0-0-C-1] [                                                 ] o.a.k.c.c.internals.SubscriptionState    : [Consumer clientId=consumer-settlement-service-2, groupId=settlement-service] Resetting offset for partition settlement.requests-2 to position FetchPosition{offset=0, offsetEpoch=Optional.empty, currentLeader=LeaderAndEpoch{leader=Optional[localhost:54160 (id: 1 rack: null)], epoch=0}}.
+2026-11-02T13:09:55.941-03:00  INFO 57716 --- [settlement-service] [ntainer#0-0-C-1] [                                                 ] o.a.k.c.c.internals.SubscriptionState    : [Consumer clientId=consumer-settlement-service-2, groupId=settlement-service] Resetting offset for partition settlement.requests-1 to position FetchPosition{offset=0, offsetEpoch=Optional.empty, currentLeader=LeaderAndEpoch{leader=Optional[localhost:54160 (id: 1 rack: null)], epoch=0}}.
+2026-11-02T13:09:55.942-03:00  INFO 57716 --- [settlement-service] [ntainer#0-0-C-1] [                                                 ] o.s.k.l.KafkaMessageListenerContainer    : settlement-service: partitions assigned: [settlement.requests-0, settlement.requests-1, settlement.requests-2]
+2026-11-02T13:09:55.944-03:00  WARN 57716 --- [settlement-service] [    Test worker] [                                                 ] o.s.core.events.SpringDocAppInitializer  : SpringDoc /v3/api-docs endpoint is enabled by default. To disable it in production, set the property 'springdoc.api-docs.enabled=false'
+2026-11-02T13:09:55.944-03:00  WARN 57716 --- [settlement-service] [    Test worker] [                                                 ] o.s.core.events.SpringDocAppInitializer  : SpringDoc /swagger-ui.html endpoint is enabled by default. To disable it in production, set the property 'springdoc.swagger-ui.enabled=false'
+2026-11-02T13:09:56.097-03:00  INFO 57716 --- [settlement-service] [     virtual-44] [                                                 ] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1, groupId=test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27] Request joining group due to: cached metadata has changed from (version3: {settlement.results=[NO_RACKS]}) at the beginning of the rebalance to (version8: {settlement.results=[NO_RACKS, NO_RACKS, NO_RACKS]})
+2026-11-02T13:09:56.117-03:00  INFO 57716 --- [settlement-service] [     virtual-44] [                                                 ] k.c.c.i.ConsumerRebalanceListenerInvoker : [Consumer clientId=consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1, groupId=test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27] Revoke previously assigned partitions settlement.results-0
+2026-11-02T13:09:56.117-03:00  INFO 57716 --- [settlement-service] [     virtual-44] [                                                 ] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1, groupId=test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27] (Re-)joining group
+2026-11-02T13:09:56.121-03:00  INFO 57716 --- [settlement-service] [     virtual-44] [                                                 ] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1, groupId=test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27] Successfully joined group with generation Generation{generationId=2, memberId='consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1-ec4ba25a-0908-4b29-abf2-a2e6c8d18716', protocol='range'}
+2026-11-02T13:09:56.122-03:00  INFO 57716 --- [settlement-service] [     virtual-44] [                                                 ] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1, groupId=test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27] Finished assignment for group at generation 2: {consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1-ec4ba25a-0908-4b29-abf2-a2e6c8d18716=Assignment(partitions=[settlement.results-0, settlement.results-1, settlement.results-2])}
+2026-11-02T13:09:56.125-03:00  INFO 57716 --- [settlement-service] [     virtual-44] [                                                 ] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1, groupId=test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27] Successfully synced group in generation Generation{generationId=2, memberId='consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1-ec4ba25a-0908-4b29-abf2-a2e6c8d18716', protocol='range'}
+2026-11-02T13:09:56.125-03:00  INFO 57716 --- [settlement-service] [     virtual-44] [                                                 ] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1, groupId=test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27] Notifying assignor about the new Assignment(partitions=[settlement.results-0, settlement.results-1, settlement.results-2])
+2026-11-02T13:09:56.125-03:00  INFO 57716 --- [settlement-service] [     virtual-44] [                                                 ] k.c.c.i.ConsumerRebalanceListenerInvoker : [Consumer clientId=consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1, groupId=test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27] Adding newly assigned partitions: settlement.results-0, settlement.results-1, settlement.results-2
+2026-11-02T13:09:56.127-03:00  INFO 57716 --- [settlement-service] [     virtual-44] [                                                 ] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1, groupId=test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27] Found no committed offset for partition settlement.results-2
+2026-11-02T13:09:56.127-03:00  INFO 57716 --- [settlement-service] [     virtual-44] [                                                 ] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1, groupId=test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27] Found no committed offset for partition settlement.results-1
+2026-11-02T13:09:56.128-03:00  INFO 57716 --- [settlement-service] [     virtual-44] [                                                 ] o.a.k.c.c.internals.ConsumerUtils        : Setting offset for partition settlement.results-0 to the committed offset FetchPosition{offset=0, offsetEpoch=Optional.empty, currentLeader=LeaderAndEpoch{leader=Optional[localhost:54160 (id: 1 rack: null)], epoch=0}}
+2026-11-02T13:09:56.606-03:00  INFO 57716 --- [settlement-service] [     virtual-44] [                                                 ] o.a.k.c.c.internals.SubscriptionState    : [Consumer clientId=consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1, groupId=test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27] Resetting offset for partition settlement.results-2 to position FetchPosition{offset=0, offsetEpoch=Optional.empty, currentLeader=LeaderAndEpoch{leader=Optional[localhost:54160 (id: 1 rack: null)], epoch=0}}.
+2026-11-02T13:09:56.607-03:00  INFO 57716 --- [settlement-service] [     virtual-44] [                                                 ] o.a.k.c.c.internals.SubscriptionState    : [Consumer clientId=consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1, groupId=test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27] Resetting offset for partition settlement.results-1 to position FetchPosition{offset=0, offsetEpoch=Optional.empty, currentLeader=LeaderAndEpoch{leader=Optional[localhost:54160 (id: 1 rack: null)], epoch=0}}.
+2026-11-02T13:09:56.657-03:00  INFO 57716 --- [settlement-service] [    Test worker] [6443e8cbfcb4de20d408fc72ede25b34-2a744785188ed65d] o.a.k.clients.producer.ProducerConfig    : ProducerConfig values: 
+	acks = -1
+	auto.include.jmx.reporter = true
+	batch.size = 16384
+	bootstrap.servers = [localhost:54160]
+	buffer.memory = 33554432
+	client.dns.lookup = use_all_dns_ips
+	client.id = settlement-service-producer-1
+	compression.gzip.level = -1
+	compression.lz4.level = 9
+	compression.type = none
+	compression.zstd.level = 3
+	connections.max.idle.ms = 540000
+	delivery.timeout.ms = 120000
+	enable.idempotence = true
+	enable.metrics.push = true
+	interceptor.classes = []
+	key.serializer = class org.apache.kafka.common.serialization.StringSerializer
+	linger.ms = 0
+	max.block.ms = 60000
+	max.in.flight.requests.per.connection = 5
+	max.request.size = 1048576
+	metadata.max.age.ms = 300000
+	metadata.max.idle.ms = 300000
+	metadata.recovery.strategy = none
+	metric.reporters = []
+	metrics.num.samples = 2
+	metrics.recording.level = INFO
+	metrics.sample.window.ms = 30000
+	partitioner.adaptive.partitioning.enable = true
+	partitioner.availability.timeout.ms = 0
+	partitioner.class = null
+	partitioner.ignore.keys = false
+	receive.buffer.bytes = 32768
+	reconnect.backoff.max.ms = 1000
+	reconnect.backoff.ms = 50
+	request.timeout.ms = 30000
+	retries = 2147483647
+	retry.backoff.max.ms = 1000
+	retry.backoff.ms = 100
+	sasl.client.callback.handler.class = null
+	sasl.jaas.config = null
+	sasl.kerberos.kinit.cmd = /usr/bin/kinit
+	sasl.kerberos.min.time.before.relogin = 60000
+	sasl.kerberos.service.name = null
+	sasl.kerberos.ticket.renew.jitter = 0.05
+	sasl.kerberos.ticket.renew.window.factor = 0.8
+	sasl.login.callback.handler.class = null
+	sasl.login.class = null
+	sasl.login.connect.timeout.ms = null
+	sasl.login.read.timeout.ms = null
+	sasl.login.refresh.buffer.seconds = 300
+	sasl.login.refresh.min.period.seconds = 60
+	sasl.login.refresh.window.factor = 0.8
+	sasl.login.refresh.window.jitter = 0.05
+	sasl.login.retry.backoff.max.ms = 10000
+	sasl.login.retry.backoff.ms = 100
+	sasl.mechanism = GSSAPI
+	sasl.oauthbearer.clock.skew.seconds = 30
+	sasl.oauthbearer.expected.audience = null
+	sasl.oauthbearer.expected.issuer = null
+	sasl.oauthbearer.header.urlencode = false
+	sasl.oauthbearer.jwks.endpoint.refresh.ms = 3600000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.max.ms = 10000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.ms = 100
+	sasl.oauthbearer.jwks.endpoint.url = null
+	sasl.oauthbearer.scope.claim.name = scope
+	sasl.oauthbearer.sub.claim.name = sub
+	sasl.oauthbearer.token.endpoint.url = null
+	security.protocol = PLAINTEXT
+	security.providers = null
+	send.buffer.bytes = 131072
+	socket.connection.setup.timeout.max.ms = 30000
+	socket.connection.setup.timeout.ms = 10000
+	ssl.cipher.suites = null
+	ssl.enabled.protocols = [TLSv1.2, TLSv1.3]
+	ssl.endpoint.identification.algorithm = https
+	ssl.engine.factory.class = null
+	ssl.key.password = null
+	ssl.keymanager.algorithm = SunX509
+	ssl.keystore.certificate.chain = null
+	ssl.keystore.key = null
+	ssl.keystore.location = null
+	ssl.keystore.password = null
+	ssl.keystore.type = JKS
+	ssl.protocol = TLSv1.3
+	ssl.provider = null
+	ssl.secure.random.implementation = null
+	ssl.trustmanager.algorithm = PKIX
+	ssl.truststore.certificates = null
+	ssl.truststore.location = null
+	ssl.truststore.password = null
+	ssl.truststore.type = JKS
+	transaction.timeout.ms = 60000
+	transactional.id = null
+	value.serializer = class org.apache.kafka.common.serialization.StringSerializer
+
+2026-11-02T13:09:56.658-03:00  INFO 57716 --- [settlement-service] [    Test worker] [6443e8cbfcb4de20d408fc72ede25b34-2a744785188ed65d] o.a.k.c.t.i.KafkaMetricsCollector        : initializing Kafka metrics collector
+2026-11-02T13:09:56.669-03:00  INFO 57716 --- [settlement-service] [    Test worker] [6443e8cbfcb4de20d408fc72ede25b34-2a744785188ed65d] o.a.k.clients.producer.KafkaProducer     : [Producer clientId=settlement-service-producer-1] Instantiated an idempotent producer.
+2026-11-02T13:09:56.687-03:00  INFO 57716 --- [settlement-service] [    Test worker] [6443e8cbfcb4de20d408fc72ede25b34-2a744785188ed65d] o.a.kafka.common.utils.AppInfoParser     : Kafka version: 3.9.2
+2026-11-02T13:09:56.687-03:00  INFO 57716 --- [settlement-service] [    Test worker] [6443e8cbfcb4de20d408fc72ede25b34-2a744785188ed65d] o.a.kafka.common.utils.AppInfoParser     : Kafka commitId: 5e9866f43ab8e7e4
+2026-11-02T13:09:56.687-03:00  INFO 57716 --- [settlement-service] [    Test worker] [6443e8cbfcb4de20d408fc72ede25b34-2a744785188ed65d] o.a.kafka.common.utils.AppInfoParser     : Kafka startTimeMs: 1793635796687
+2026-11-02T13:09:56.697-03:00  INFO 57716 --- [settlement-service] [vice-producer-1] [                                                 ] org.apache.kafka.clients.Metadata        : [Producer clientId=settlement-service-producer-1] Cluster ID: 4L6g3nShT-eMCtK--X86sw
+2026-11-02T13:09:56.821-03:00  INFO 57716 --- [settlement-service] [vice-producer-1] [                                                 ] o.a.k.c.p.internals.TransactionManager   : [Producer clientId=settlement-service-producer-1] ProducerId set to 0 with epoch 0
+2026-11-02T13:09:56.892-03:00  INFO 57716 --- [settlement-service] [ntainer#0-0-C-1] [6443e8cbfcb4de20d408fc72ede25b34-db01b4a249229572] c.i.s.a.m.SettlementRequestListener      : Transfer fdca8f95-4b2d-4ce9-af10-da21888d07f5 SETTLED
+2026-11-02T13:09:57.338-03:00  INFO 57716 --- [settlement-service] [o-auto-1-exec-1] [                                                 ] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-11-02T13:09:57.338-03:00  INFO 57716 --- [settlement-service] [o-auto-1-exec-1] [                                                 ] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-11-02T13:09:57.339-03:00  INFO 57716 --- [settlement-service] [o-auto-1-exec-1] [                                                 ] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+2026-11-02T13:09:57.447-03:00  INFO 57716 --- [settlement-service] [ntainer#0-0-C-1] [13aa707152b378e74ba4a9fd50a799c3-005965fa7593b91d] c.i.s.a.m.SettlementRequestListener      : Transfer 7ebf85bb-931b-472a-98e7-798a1bd7e1fe SETTLED
+2026-11-02T13:09:57.668-03:00  INFO 57716 --- [settlement-service] [ntainer#0-0-C-1] [786f64437eb9154044aaacb327243c6a-5fd80cf2ca62e579] c.i.s.a.m.SettlementRequestListener      : Transfer 55c71bbe-c207-4f81-9af6-05a56c4bf822 REJECTED (expired)
+2026-11-02T13:09:57.773-03:00  INFO 57716 --- [settlement-service] [ntainer#0-0-C-1] [47aeebf3c35134403c1525f1649cb516-2b891723d6aacf7d] c.i.s.a.m.SettlementRequestListener      : Transfer 64622b16-d023-438a-afab-83e7ed779ee6 REJECTED (unknown_creditor_institution)
+2026-11-02T13:09:57.894-03:00  INFO 57716 --- [settlement-service] [ntainer#0-0-C-1] [a08075a6561348a1fdeb45c539be6703-518b1357c5594efb] c.i.s.a.m.SettlementRequestListener      : Transfer 05d47ce1-7a45-46fc-b8e7-3cbe79d93556 SETTLED
+2026-11-02T13:09:57.999-03:00  INFO 57716 --- [settlement-service] [ntainer#0-0-C-1] [0d3d7571ae151ab56a1f2f7d9b8a6971-3571ba6a2f41bcdf] c.i.s.a.m.SettlementRequestListener      : Transfer 05d47ce1-7a45-46fc-b8e7-3cbe79d93556 SETTLED
+2026-11-02T13:09:58.207-03:00  INFO 57716 --- [settlement-service] [     virtual-44] [                                                 ] k.c.c.i.ConsumerRebalanceListenerInvoker : [Consumer clientId=consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1, groupId=test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27] Revoke previously assigned partitions settlement.results-0, settlement.results-1, settlement.results-2
+2026-11-02T13:09:58.207-03:00  INFO 57716 --- [settlement-service] [     virtual-44] [                                                 ] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1, groupId=test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27] Member consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1-ec4ba25a-0908-4b29-abf2-a2e6c8d18716 sending LeaveGroup request to coordinator localhost:54160 (id: 2147483646 rack: null) due to the consumer is being closed
+2026-11-02T13:09:58.208-03:00  INFO 57716 --- [settlement-service] [     virtual-44] [                                                 ] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1, groupId=test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27] Resetting generation and member id due to: consumer pro-actively leaving the group
+2026-11-02T13:09:58.208-03:00  INFO 57716 --- [settlement-service] [     virtual-44] [                                                 ] o.a.k.c.c.internals.ConsumerCoordinator  : [Consumer clientId=consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1, groupId=test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27] Request joining group due to: consumer pro-actively leaving the group
+2026-11-02T13:09:58.510-03:00  INFO 57716 --- [settlement-service] [     virtual-44] [                                                 ] o.apache.kafka.common.metrics.Metrics    : Metrics scheduler closed
+2026-11-02T13:09:58.511-03:00  INFO 57716 --- [settlement-service] [     virtual-44] [                                                 ] o.apache.kafka.common.metrics.Metrics    : Closing reporter org.apache.kafka.common.metrics.JmxReporter
+2026-11-02T13:09:58.511-03:00  INFO 57716 --- [settlement-service] [     virtual-44] [                                                 ] o.apache.kafka.common.metrics.Metrics    : Closing reporter org.apache.kafka.common.telemetry.internals.ClientTelemetryReporter
+2026-11-02T13:09:58.511-03:00  INFO 57716 --- [settlement-service] [     virtual-44] [                                                 ] o.apache.kafka.common.metrics.Metrics    : Metrics reporters closed
+2026-11-02T13:09:58.513-03:00  INFO 57716 --- [settlement-service] [     virtual-44] [                                                 ] o.a.kafka.common.utils.AppInfoParser     : App info kafka.consumer for consumer-test-payment-35c3586c-1807-42c7-8d4a-5ae1098d6d27-1 unregistered
+]]></system-out>
+  <system-err><![CDATA[Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build as described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3
+WARNING: A Java agent has been loaded dynamically (/Users/epeagel/.gradle/caches/modules-2/files-2.1/net.bytebuddy/byte-buddy-agent/1.17.8/f09415827a71be7ed621c7bd02550678f28bc81c/byte-buddy-agent-1.17.8.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+]]></system-err>
+</testsuite>

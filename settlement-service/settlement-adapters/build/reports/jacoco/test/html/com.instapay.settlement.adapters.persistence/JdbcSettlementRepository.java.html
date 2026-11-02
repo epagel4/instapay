@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JdbcSettlementRepository.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">settlement-adapters</a> &gt; <a href="index.source.html" class="el_package">com.instapay.settlement.adapters.persistence</a> &gt; <span class="el_source">JdbcSettlementRepository.java</span></div><h1>JdbcSettlementRepository.java</h1><pre class="source lang-java linenums">package com.instapay.settlement.adapters.persistence;
+
+import com.instapay.settlement.application.port.out.SettlementRepository;
+import com.instapay.settlement.domain.Settlement;
+import com.instapay.settlement.domain.SettlementStatus;
+import java.sql.Timestamp;
+import java.util.Optional;
+import java.util.UUID;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public class JdbcSettlementRepository implements SettlementRepository {
+
+<span class="fc" id="L16">  private static final RowMapper&lt;Settlement&gt; MAPPER =</span>
+      (rs, i) -&gt;
+<span class="fc" id="L18">          new Settlement(</span>
+<span class="fc" id="L19">              rs.getObject(&quot;transfer_id&quot;, UUID.class),</span>
+<span class="fc" id="L20">              rs.getString(&quot;debtor_ispb&quot;),</span>
+<span class="fc" id="L21">              rs.getString(&quot;creditor_ispb&quot;),</span>
+<span class="fc" id="L22">              rs.getObject(&quot;creditor_account&quot;, UUID.class),</span>
+<span class="fc" id="L23">              rs.getLong(&quot;amount_cents&quot;),</span>
+<span class="fc" id="L24">              SettlementStatus.valueOf(rs.getString(&quot;status&quot;)),</span>
+<span class="fc" id="L25">              rs.getString(&quot;reason&quot;),</span>
+<span class="fc" id="L26">              rs.getTimestamp(&quot;decided_at&quot;).toInstant());</span>
+
+  private final JdbcTemplate jdbc;
+
+<span class="fc" id="L30">  public JdbcSettlementRepository(JdbcTemplate jdbc) {</span>
+<span class="fc" id="L31">    this.jdbc = jdbc;</span>
+<span class="fc" id="L32">  }</span>
+
+  @Override
+  public Optional&lt;Settlement&gt; findByTransferId(UUID transferId) {
+<span class="fc" id="L36">    return jdbc.query(&quot;SELECT * FROM settlement WHERE transfer_id = ?&quot;, MAPPER, transferId).stream()</span>
+<span class="fc" id="L37">        .findFirst();</span>
+  }
+
+  @Override
+  public Settlement insertIfAbsent(Settlement s) {
+<span class="fc" id="L42">    jdbc.update(</span>
+        &quot;&quot;&quot;
+        INSERT INTO settlement (transfer_id, debtor_ispb, creditor_ispb, creditor_account, amount_cents,
+                                status, reason, decided_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (transfer_id) DO NOTHING
+        &quot;&quot;&quot;,
+<span class="fc" id="L48">        s.transferId(),</span>
+<span class="fc" id="L49">        s.debtorIspb(),</span>
+<span class="fc" id="L50">        s.creditorIspb(),</span>
+<span class="fc" id="L51">        s.creditorAccount(),</span>
+<span class="fc" id="L52">        s.amountCents(),</span>
+<span class="fc" id="L53">        s.status().name(),</span>
+<span class="fc" id="L54">        s.reason(),</span>
+<span class="fc" id="L55">        Timestamp.from(s.decidedAt()));</span>
+<span class="fc" id="L56">    return findByTransferId(s.transferId()).orElseThrow();</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

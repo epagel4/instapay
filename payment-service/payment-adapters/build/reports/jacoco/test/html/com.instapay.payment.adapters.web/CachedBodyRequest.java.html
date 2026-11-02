@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CachedBodyRequest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">payment-adapters</a> &gt; <a href="index.source.html" class="el_package">com.instapay.payment.adapters.web</a> &gt; <span class="el_source">CachedBodyRequest.java</span></div><h1>CachedBodyRequest.java</h1><pre class="source lang-java linenums">package com.instapay.payment.adapters.web;
+
+import jakarta.servlet.ReadListener;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+
+/** Request whose body was read up-front (for the fingerprint) and can be re-read downstream. */
+final class CachedBodyRequest extends HttpServletRequestWrapper {
+
+  private final byte[] body;
+
+  CachedBodyRequest(HttpServletRequest request, byte[] body) {
+<span class="fc" id="L19">    super(request);</span>
+<span class="fc" id="L20">    this.body = body.clone();</span>
+<span class="fc" id="L21">  }</span>
+
+  @Override
+  public ServletInputStream getInputStream() {
+<span class="fc" id="L25">    ByteArrayInputStream in = new ByteArrayInputStream(body);</span>
+<span class="fc" id="L26">    return new ServletInputStream() {</span>
+      @Override
+      public boolean isFinished() {
+<span class="nc bnc" id="L29" title="All 2 branches missed.">        return in.available() == 0;</span>
+      }
+
+      @Override
+      public boolean isReady() {
+<span class="nc" id="L34">        return true;</span>
+      }
+
+      @Override
+      public void setReadListener(ReadListener listener) {
+<span class="nc" id="L39">        throw new UnsupportedOperationException();</span>
+      }
+
+      @Override
+      public int read() {
+<span class="fc" id="L44">        return in.read();</span>
+      }
+
+      @Override
+      public int read(byte[] b, int off, int len) {
+<span class="fc" id="L49">        return in.read(b, off, len);</span>
+      }
+    };
+  }
+
+  @Override
+  public BufferedReader getReader() throws IOException {
+<span class="nc" id="L56">    return new BufferedReader(new InputStreamReader(getInputStream(), StandardCharsets.UTF_8));</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

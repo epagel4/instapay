@@ -1,0 +1,184 @@
+### InstaPay — fluxo completo (IntelliJ HTTP Client / VS Code REST Client)
+### Toda escrita exige Idempotency-Key. {{$uuid}} gera uma nova a cada envio;
+### para testar replay, fixe um valor e envie duas vezes.
+
+@base = http://localhost:8080/api/v1
+
+### 1. Abrir conta da Alice
+# @name alice
+POST {{base}}/accounts
+Content-Type: application/json
+Idempotency-Key: {{$uuid}}
+
+{ "holderName": "Alice Souza", "holderCpf": "529.982.247-25" }
+
+### 2. Abrir conta do Bob
+# @name bob
+POST {{base}}/accounts
+Content-Type: application/json
+Idempotency-Key: {{$uuid}}
+
+{ "holderName": "Bob Lima", "holderCpf": "529.982.247-25" }
+
+### 3. Depositar R$ 100,00 na Alice
+POST {{base}}/accounts/{{alice.response.body.id}}/deposits
+Content-Type: application/json
+Idempotency-Key: {{$uuid}}
+
+{ "amount": "100.00" }
+
+### 4. Transferir R$ 30,25 Alice -> Bob (envie de novo: replay, mesma resposta)
+# @name transfer
+POST {{base}}/transfers
+Content-Type: application/json
+Idempotency-Key: demo-transfer-0001
+
+{
+  "debtorAccountId": "{{alice.response.body.id}}",
+  "creditorAccountId": "{{bob.response.body.id}}",
+  "amount": "30.25"
+}
+
+### 5. Consultar a transferência
+GET {{base}}/transfers/{{transfer.response.body.id}}
+
+### 6. Saldos (derivados do ledger)
+GET {{base}}/accounts/{{alice.response.body.id}}
+
+###
+GET {{base}}/accounts/{{bob.response.body.id}}
+
+### 7. Mesma chave, corpo diferente -> 422 idempotency.key_reused
+POST {{base}}/transfers
+Content-Type: application/json
+Idempotency-Key: demo-transfer-0001
+
+{
+  "debtorAccountId": "{{alice.response.body.id}}",
+  "creditorAccountId": "{{bob.response.body.id}}",
+  "amount": "99.00"
+}
+
+### 8. Sem fundos -> 422 transfer.insufficient_funds (RFC 7807)
+POST {{base}}/transfers
+Content-Type: application/json
+Idempotency-Key: {{$uuid}}
+
+{
+  "debtorAccountId": "{{bob.response.body.id}}",
+  "creditorAccountId": "{{alice.response.body.id}}",
+  "amount": "1000.00"
+}
+
+### ===================== Chaves de pagamento (Fase 5) =====================
+
+### 9. Registrar chave e-mail na Alice
+POST {{base}}/keys
+Content-Type: application/json
+Idempotency-Key: {{$uuid}}
+
+{ "accountId": "{{alice.response.body.id}}", "type": "EMAIL", "value": "Alice.Souza@Example.com" }
+
+### 10. Registrar chave aleatória (valor gerado pelo servidor)
+POST {{base}}/keys
+Content-Type: application/json
+Idempotency-Key: {{$uuid}}
+
+{ "accountId": "{{alice.response.body.id}}", "type": "RANDOM" }
+
+### 11. Consultar chave (forma canônica: minúsculas) — CPF do titular vem mascarado
+GET {{base}}/keys/EMAIL/alice.souza@example.com
+
+### 12. Chaves da conta
+GET {{base}}/accounts/{{alice.response.body.id}}/keys
+
+### 13. Bob (mesmo CPF da Alice neste exemplo) pede portabilidade da chave -> PORTABILITY
+# @name claim
+POST {{base}}/key-claims
+Content-Type: application/json
+Idempotency-Key: {{$uuid}}
+
+{ "claimerAccountId": "{{bob.response.body.id}}", "keyType": "EMAIL", "keyValue": "alice.souza@example.com" }
+
+### 14. Doadora (Alice) confirma -> chave passa para o Bob
+POST {{base}}/key-claims/{{claim.response.body.id}}/confirm
+Content-Type: application/json
+Idempotency-Key: {{$uuid}}
+
+{ "accountId": "{{alice.response.body.id}}" }
+
+### 15. Excluir chave (só a conta dona)
+DELETE {{base}}/keys/EMAIL/alice.souza@example.com?accountId={{bob.response.body.id}}
+Idempotency-Key: {{$uuid}}
+
+### ===================== Transferência entre instituições (Fase 6) =====================
+
+### 16. Para outra instituição (ISPB 00000002): 202 PENDING, valor retido; acompanhe pelo GET
+# @name external
+POST {{base}}/transfers
+Content-Type: application/json
+Idempotency-Key: {{$uuid}}
+
+{
+  "debtorAccountId": "{{alice.response.body.id}}",
+  "creditor": { "ispb": "00000002", "accountId": "7b0b2f5e-1c1a-4d0e-9a4e-2f1d7f6c9a10" },
+  "amount": "10.00"
+}
+
+### 17. Status (COMPLETED quando o settlement liquidar)
+GET {{base}}/transfers/{{external.response.body.id}}
+
+### 18. Decisão da câmara (settlement-service)
+GET http://localhost:8081/api/v1/settlements/{{external.response.body.id}}
+
+### 19. Instituição desconhecida -> settlement rejeita -> compensação (FAILED, saldo devolvido)
+POST {{base}}/transfers
+Content-Type: application/json
+Idempotency-Key: {{$uuid}}
+
+{
+  "debtorAccountId": "{{alice.response.body.id}}",
+  "creditor": { "ispb": "99999999", "accountId": "7b0b2f5e-1c1a-4d0e-9a4e-2f1d7f6c9a10" },
+  "amount": "5.00"
+}
+
+### 20. Para uma chave (resolvida no diretório local)
+POST {{base}}/transfers
+Content-Type: application/json
+Idempotency-Key: {{$uuid}}
+
+{
+  "debtorAccountId": "{{alice.response.body.id}}",
+  "creditorKey": { "type": "EMAIL", "value": "alice.souza@example.com" },
+  "amount": "1.00"
+}
+
+### ===================== Estornos e limites (Fase 7) =====================
+
+### 21. Transferência interna para estornar depois
+# @name toRefund
+POST {{base}}/transfers
+Content-Type: application/json
+Idempotency-Key: {{$uuid}}
+
+{ "debtorAccountId": "{{alice.response.body.id}}", "creditorAccountId": "{{bob.response.body.id}}", "amount": "10.00" }
+
+### 22. Estorno parcial (pago por quem recebeu: Bob -> Alice)
+POST {{base}}/transfers/{{toRefund.response.body.id}}/refunds
+Content-Type: application/json
+Idempotency-Key: {{$uuid}}
+
+{ "amount": "4.00", "reason": "valor cobrado a mais" }
+
+### 23. Estornos da transferência: total estornado e saldo estornável
+GET {{base}}/transfers/{{toRefund.response.body.id}}/refunds
+
+### 24. Limites e uso (spentTonight só aparece entre 20h e 6h, horário de Brasília)
+GET {{base}}/accounts/{{alice.response.body.id}}/limits
+
+### 25. Personalizar limites da conta
+PUT {{base}}/accounts/{{alice.response.body.id}}/limits
+Content-Type: application/json
+Idempotency-Key: {{$uuid}}
+
+{ "perTransaction": "2000.00", "daily": "5000.00", "nightly": "500.00" }

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.instapay.settlement.domain.SettlementTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-11-02T16:10:02.342Z" hostname="MacBook-Pro-de-Eduardo.local" time="0.166">
+  <properties/>
+  <testcase name="settlesExactlyAtExpiryButNeverAfter()" classname="com.instapay.settlement.domain.SettlementTest" time="0.087"/>
+  <testcase name="[1] debtor=00000001, creditor=99999999, cents=100, reason=unknown_creditor_institution" classname="com.instapay.settlement.domain.SettlementTest" time="0.012"/>
+  <testcase name="[2] debtor=99999999, creditor=00000002, cents=100, reason=unknown_debtor_institution" classname="com.instapay.settlement.domain.SettlementTest" time="0.001"/>
+  <testcase name="[3] debtor=00000001, creditor=00000001, cents=100, reason=same_institution" classname="com.instapay.settlement.domain.SettlementTest" time="0.0"/>
+  <testcase name="[4] debtor=00000001, creditor=00000002, cents=0, reason=invalid_amount" classname="com.instapay.settlement.domain.SettlementTest" time="0.001"/>
+  <testcase name="[5] debtor=00000001, creditor=00000002, cents=-5, reason=invalid_amount" classname="com.instapay.settlement.domain.SettlementTest" time="0.001"/>
+  <testcase name="requiresMandatoryFields()" classname="com.instapay.settlement.domain.SettlementTest" time="0.004"/>
+  <testcase name="settlesValidOrderBetweenParticipants()" classname="com.instapay.settlement.domain.SettlementTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

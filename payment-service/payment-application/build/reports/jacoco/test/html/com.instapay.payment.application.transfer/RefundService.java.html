@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RefundService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">payment-application</a> &gt; <a href="index.source.html" class="el_package">com.instapay.payment.application.transfer</a> &gt; <span class="el_source">RefundService.java</span></div><h1>RefundService.java</h1><pre class="source lang-java linenums">package com.instapay.payment.application.transfer;
+
+import com.instapay.payment.application.ConflictRetry;
+import com.instapay.payment.application.ResourceNotFoundException;
+import com.instapay.payment.application.port.out.AccountLocking;
+import com.instapay.payment.application.port.out.AccountRepository;
+import com.instapay.payment.application.port.out.AuditLog;
+import com.instapay.payment.application.port.out.LedgerRepository;
+import com.instapay.payment.application.port.out.RefundRepository;
+import com.instapay.payment.application.port.out.TransactionRunner;
+import com.instapay.payment.application.port.out.TransferRepository;
+import com.instapay.payment.domain.account.Account;
+import com.instapay.payment.domain.ledger.JournalEntry;
+import com.instapay.payment.domain.ledger.JournalEntryId;
+import com.instapay.payment.domain.ledger.JournalEntryType;
+import com.instapay.payment.domain.shared.DomainException;
+import com.instapay.payment.domain.shared.Money;
+import com.instapay.payment.domain.transfer.Refund;
+import com.instapay.payment.domain.transfer.RefundEvent;
+import com.instapay.payment.domain.transfer.RefundId;
+import com.instapay.payment.domain.transfer.Transfer;
+import com.instapay.payment.domain.transfer.TransferId;
+import java.time.Clock;
+import java.time.Instant;
+import java.util.List;
+
+/**
+ * Refunds (devolução): the original creditor returns all or part of a transfer to its debtor.
+ *
+ * &lt;p&gt;Locks: the original transfer row (serializes refunds of the same transfer, so their sum can
+ * never exceed the original), then the creditor account like any debit. Refunds are returns, not
+ * new payments, so they do not consume the creditor's transfer limits.
+ */
+public class RefundService {
+
+<span class="nc" id="L36">  public record RefundSummary(Transfer transfer, List&lt;Refund&gt; refunds, Money totalRefunded) {</span>
+
+    public Money refundable() {
+<span class="nc" id="L39">      return transfer.amount().minus(totalRefunded);</span>
+    }
+  }
+
+  private final TransferRepository transfers;
+  private final RefundRepository refunds;
+  private final AccountRepository accounts;
+  private final AccountLocking locking;
+  private final LedgerRepository ledger;
+  private final AuditLog audit;
+  private final TransactionRunner tx;
+  private final Clock clock;
+  private final int maxAttempts;
+
+  public RefundService(
+      TransferRepository transfers,
+      RefundRepository refunds,
+      AccountRepository accounts,
+      AccountLocking locking,
+      LedgerRepository ledger,
+      AuditLog audit,
+      TransactionRunner tx,
+      Clock clock,
+<span class="nc" id="L62">      int maxAttempts) {</span>
+<span class="nc" id="L63">    this.transfers = transfers;</span>
+<span class="nc" id="L64">    this.refunds = refunds;</span>
+<span class="nc" id="L65">    this.accounts = accounts;</span>
+<span class="nc" id="L66">    this.locking = locking;</span>
+<span class="nc" id="L67">    this.ledger = ledger;</span>
+<span class="nc" id="L68">    this.audit = audit;</span>
+<span class="nc" id="L69">    this.tx = tx;</span>
+<span class="nc" id="L70">    this.clock = clock;</span>
+<span class="nc" id="L71">    this.maxAttempts = maxAttempts;</span>
+<span class="nc" id="L72">  }</span>
+
+  public Refund refund(TransferId original, Money amount, String reason) {
+<span class="nc" id="L75">    return ConflictRetry.run(</span>
+<span class="nc" id="L76">        maxAttempts, () -&gt; tx.inTransaction(() -&gt; attempt(original, amount, reason)));</span>
+  }
+
+  public RefundSummary summary(TransferId original) {
+<span class="nc" id="L80">    Transfer transfer = transfers.findById(original).orElseThrow(() -&gt; transferNotFound(original));</span>
+<span class="nc" id="L81">    return new RefundSummary(</span>
+<span class="nc" id="L82">        transfer, refunds.listByTransfer(original), refunds.totalFor(original));</span>
+  }
+
+  private Refund attempt(TransferId originalId, Money amount, String reason) {
+<span class="nc" id="L86">    Transfer original =</span>
+<span class="nc" id="L87">        transfers.findByIdForUpdate(originalId).orElseThrow(() -&gt; transferNotFound(originalId));</span>
+<span class="nc" id="L88">    Money alreadyRefunded = refunds.totalFor(originalId);</span>
+<span class="nc" id="L89">    Instant now = clock.instant();</span>
+<span class="nc" id="L90">    Refund refund = original.refund(RefundId.newId(), amount, alreadyRefunded, reason, now);</span>
+
+<span class="nc" id="L92">    Account payer = locking.loadForDebit(original.creditor().account()).orElseThrow();</span>
+<span class="nc" id="L93">    Account payee = accounts.findById(original.debtor().account()).orElseThrow();</span>
+<span class="nc" id="L94">    payer.ensureCanDebit();</span>
+<span class="nc" id="L95">    payee.ensureCanCredit();</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">    if (ledger.balanceOf(payer.id()).compareTo(amount) &lt; 0) {</span>
+<span class="nc" id="L97">      throw new DomainException(</span>
+          &quot;refund.insufficient_funds&quot;, &quot;Creditor has insufficient funds for the refund&quot;);
+    }
+
+<span class="nc" id="L101">    refunds.insert(refund);</span>
+<span class="nc" id="L102">    ledger.append(</span>
+<span class="nc" id="L103">        JournalEntry.move(</span>
+<span class="nc" id="L104">            JournalEntryId.newId(),</span>
+            JournalEntryType.REFUND,
+<span class="nc" id="L106">            refund.id().value(),</span>
+<span class="nc" id="L107">            payer.id(),</span>
+<span class="nc" id="L108">            payee.id(),</span>
+            amount,
+            now));
+<span class="nc" id="L111">    audit.append(RefundEvent.of(refund, alreadyRefunded.plus(amount).cents()));</span>
+<span class="nc" id="L112">    locking.confirmDebit(payer);</span>
+<span class="nc" id="L113">    return refund;</span>
+  }
+
+  private static ResourceNotFoundException transferNotFound(TransferId id) {
+<span class="nc" id="L117">    return new ResourceNotFoundException(&quot;transfer.not_found&quot;, &quot;Transfer &quot; + id + &quot; not found&quot;);</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JdbcKeyClaimRepository.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">payment-adapters</a> &gt; <a href="index.source.html" class="el_package">com.instapay.payment.adapters.persistence</a> &gt; <span class="el_source">JdbcKeyClaimRepository.java</span></div><h1>JdbcKeyClaimRepository.java</h1><pre class="source lang-java linenums">package com.instapay.payment.adapters.persistence;
+
+import com.instapay.payment.application.port.out.KeyClaimRepository;
+import com.instapay.payment.domain.account.AccountId;
+import com.instapay.payment.domain.pixkey.KeyClaim;
+import com.instapay.payment.domain.pixkey.KeyClaimId;
+import com.instapay.payment.domain.pixkey.KeyClaimStatus;
+import com.instapay.payment.domain.pixkey.KeyClaimType;
+import com.instapay.payment.domain.pixkey.PixKey;
+import com.instapay.payment.domain.pixkey.PixKeyType;
+import com.instapay.payment.domain.shared.DomainException;
+import java.sql.Timestamp;
+import java.util.Optional;
+import java.util.UUID;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public class JdbcKeyClaimRepository implements KeyClaimRepository {
+
+  private static final String SELECT = &quot;SELECT * FROM key_claim WHERE id = ?&quot;;
+
+<span class="fc" id="L25">  private static final RowMapper&lt;KeyClaim&gt; MAPPER =</span>
+      (rs, i) -&gt; {
+<span class="fc" id="L27">        Timestamp resolvedAt = rs.getTimestamp(&quot;resolved_at&quot;);</span>
+<span class="fc" id="L28">        return KeyClaim.restore(</span>
+<span class="fc" id="L29">            new KeyClaimId(rs.getObject(&quot;id&quot;, UUID.class)),</span>
+<span class="fc" id="L30">            PixKey.of(PixKeyType.valueOf(rs.getString(&quot;key_type&quot;)), rs.getString(&quot;key_value&quot;)),</span>
+<span class="fc" id="L31">            KeyClaimType.valueOf(rs.getString(&quot;claim_type&quot;)),</span>
+<span class="fc" id="L32">            new AccountId(rs.getObject(&quot;donor_account&quot;, UUID.class)),</span>
+<span class="fc" id="L33">            new AccountId(rs.getObject(&quot;claimer_account&quot;, UUID.class)),</span>
+<span class="fc" id="L34">            rs.getTimestamp(&quot;opened_at&quot;).toInstant(),</span>
+<span class="fc" id="L35">            rs.getTimestamp(&quot;resolution_deadline&quot;).toInstant(),</span>
+<span class="fc" id="L36">            KeyClaimStatus.valueOf(rs.getString(&quot;status&quot;)),</span>
+<span class="fc bfc" id="L37" title="All 2 branches covered.">            resolvedAt == null ? null : resolvedAt.toInstant());</span>
+      };
+
+  private final JdbcTemplate jdbc;
+
+<span class="fc" id="L42">  public JdbcKeyClaimRepository(JdbcTemplate jdbc) {</span>
+<span class="fc" id="L43">    this.jdbc = jdbc;</span>
+<span class="fc" id="L44">  }</span>
+
+  @Override
+  public void insert(KeyClaim c) {
+    try {
+<span class="fc" id="L49">      jdbc.update(</span>
+          &quot;&quot;&quot;
+          INSERT INTO key_claim (id, key_type, key_value, claim_type, donor_account, claimer_account,
+                                 status, opened_at, resolution_deadline, resolved_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          &quot;&quot;&quot;,
+<span class="fc" id="L55">          c.id().value(),</span>
+<span class="fc" id="L56">          c.key().type().name(),</span>
+<span class="fc" id="L57">          c.key().value(),</span>
+<span class="fc" id="L58">          c.type().name(),</span>
+<span class="fc" id="L59">          c.donor().value(),</span>
+<span class="fc" id="L60">          c.claimer().value(),</span>
+<span class="fc" id="L61">          c.status().name(),</span>
+<span class="fc" id="L62">          Timestamp.from(c.openedAt()),</span>
+<span class="fc" id="L63">          Timestamp.from(c.resolutionDeadline()),</span>
+<span class="fc" id="L64">          c.resolvedAt().map(Timestamp::from).orElse(null));</span>
+<span class="fc" id="L65">    } catch (DuplicateKeyException e) {</span>
+<span class="fc" id="L66">      throw new DomainException(&quot;keyclaim.already_open&quot;, &quot;Key already has an open claim&quot;);</span>
+<span class="fc" id="L67">    }</span>
+<span class="fc" id="L68">  }</span>
+
+  @Override
+  public Optional&lt;KeyClaim&gt; findById(KeyClaimId id) {
+<span class="fc" id="L72">    return jdbc.query(SELECT, MAPPER, id.value()).stream().findFirst();</span>
+  }
+
+  @Override
+  public Optional&lt;KeyClaim&gt; findByIdForUpdate(KeyClaimId id) {
+<span class="fc" id="L77">    return jdbc.query(SELECT + &quot; FOR UPDATE&quot;, MAPPER, id.value()).stream().findFirst();</span>
+  }
+
+  @Override
+  public boolean hasOpenClaim(PixKey key) {
+<span class="fc" id="L82">    return Boolean.TRUE.equals(</span>
+<span class="fc" id="L83">        jdbc.queryForObject(</span>
+            &quot;SELECT exists(SELECT 1 FROM key_claim WHERE key_type = ? AND key_value = ? AND status = 'OPEN')&quot;,
+            Boolean.class,
+<span class="fc" id="L86">            key.type().name(),</span>
+<span class="fc" id="L87">            key.value()));</span>
+  }
+
+  @Override
+  public void update(KeyClaim c) {
+<span class="fc" id="L92">    jdbc.update(</span>
+        &quot;UPDATE key_claim SET status = ?, resolved_at = ? WHERE id = ?&quot;,
+<span class="fc" id="L94">        c.status().name(),</span>
+<span class="fc" id="L95">        c.resolvedAt().map(Timestamp::from).orElse(null),</span>
+<span class="fc" id="L96">        c.id().value());</span>
+<span class="fc" id="L97">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

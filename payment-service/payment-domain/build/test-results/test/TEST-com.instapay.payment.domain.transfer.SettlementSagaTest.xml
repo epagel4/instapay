@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.instapay.payment.domain.transfer.SettlementSagaTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-11-02T16:09:38.799Z" hostname="MacBook-Pro-de-Eduardo.local" time="0.007">
+  <properties/>
+  <testcase name="settledCompletes()" classname="com.instapay.payment.domain.transfer.SettlementSagaTest" time="0.001"/>
+  <testcase name="rejectsInvalidDurations()" classname="com.instapay.payment.domain.transfer.SettlementSagaTest" time="0.0"/>
+  <testcase name="rejectionCompensatesWithReason()" classname="com.instapay.payment.domain.transfer.SettlementSagaTest" time="0.0"/>
+  <testcase name="transferEventSnapshotsTheTransfer()" classname="com.instapay.payment.domain.transfer.SettlementSagaTest" time="0.0"/>
+  <testcase name="timeoutOnlyAfterExpiryPlusGrace()" classname="com.instapay.payment.domain.transfer.SettlementSagaTest" time="0.0"/>
+  <testcase name="[1] reason=null" classname="com.instapay.payment.domain.transfer.SettlementSagaTest" time="0.0"/>
+  <testcase name="[2] reason=" classname="com.instapay.payment.domain.transfer.SettlementSagaTest" time="0.001"/>
+  <testcase name="[3] reason= " classname="com.instapay.payment.domain.transfer.SettlementSagaTest" time="0.001"/>
+  <testcase name="finishedSagaAcceptsNoMoreTransitions()" classname="com.instapay.payment.domain.transfer.SettlementSagaTest" time="0.0"/>
+  <testcase name="restoreKeepsState()" classname="com.instapay.payment.domain.transfer.SettlementSagaTest" time="0.001"/>
+  <testcase name="startsAwaitingWithExpiryAndCompensationDeadline()" classname="com.instapay.payment.domain.transfer.SettlementSagaTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

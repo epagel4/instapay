@@ -1,0 +1,50 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: settlement-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/settlement
+    username: instapay
+    password: instapay
+  mvc:
+    problemdetails:
+      enabled: true
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      acks: all
+    consumer:
+      auto-offset-reset: earliest
+    listener:
+      observation-enabled: true # consumer span continues the producer's traceparent
+    template:
+      observation-enabled: true # reply continues the consumer span
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true # p50/p95/p99 computed in Prometheus
+  tracing:
+    sampling:
+      probability: 1.0 # demo: every trace; production would sample (e.g. 0.05) or tail-sample
+  otlp:
+    tracing:
+      endpoint: http://localhost:4318/v1/traces
+
+instapay:
+  settlement:
+    # Simulated participant institutions (ISPB). InstaPay itself is 00000001.
+    participants: "00000001,00000002,00000003"

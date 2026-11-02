@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OutboxTracing.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">payment-adapters</a> &gt; <a href="index.source.html" class="el_package">com.instapay.payment.adapters.messaging</a> &gt; <span class="el_source">OutboxTracing.java</span></div><h1>OutboxTracing.java</h1><pre class="source lang-java linenums">package com.instapay.payment.adapters.messaging;
+
+import io.micrometer.tracing.Span;
+import io.micrometer.tracing.Tracer;
+import io.micrometer.tracing.propagation.Propagator;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.kafka.common.header.Headers;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.stereotype.Component;
+
+/**
+ * Carries the trace across the outbox: the writer stores the current traceparent with the row, the
+ * relay (another thread, seconds later) publishes under a span that continues it. Kafka template
+ * observation is off in this service because it would parent to the relay's poll instead.
+ */
+@Component
+final class OutboxTracing {
+
+  static final String TRACEPARENT = &quot;traceparent&quot;;
+
+  private final Tracer tracer;
+  private final Propagator propagator;
+
+<span class="fc" id="L26">  OutboxTracing(ObjectProvider&lt;Tracer&gt; tracer, ObjectProvider&lt;Propagator&gt; propagator) {</span>
+<span class="pc" id="L27">    this.tracer = tracer.getIfAvailable(() -&gt; Tracer.NOOP);</span>
+<span class="pc" id="L28">    this.propagator = propagator.getIfAvailable(() -&gt; Propagator.NOOP);</span>
+<span class="fc" id="L29">  }</span>
+
+  /** traceparent of the current span, or null when not tracing. */
+  String currentTraceParent() {
+<span class="fc" id="L33">    Span span = tracer.currentSpan();</span>
+<span class="pc bpc" id="L34" title="1 of 2 branches missed.">    if (span == null) {</span>
+<span class="nc" id="L35">      return null;</span>
+    }
+<span class="fc" id="L37">    Map&lt;String, String&gt; carrier = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L38">    propagator.inject(span.context(), carrier, Map::put);</span>
+<span class="fc" id="L39">    return carrier.get(TRACEPARENT);</span>
+  }
+
+  /** Starts a producer span continuing {@code traceParent} and injects it into the headers. */
+  Span startPublish(String traceParent, String topic, Headers headers) {
+    Span.Builder builder =
+<span class="fc bfc" id="L45" title="All 2 branches covered.">        traceParent == null</span>
+<span class="fc" id="L46">            ? tracer.spanBuilder().setNoParent()</span>
+<span class="fc" id="L47">            : propagator.extract(Map.of(TRACEPARENT, traceParent), Map::get);</span>
+<span class="fc" id="L48">    Span span =</span>
+        builder
+<span class="fc" id="L50">            .name(topic + &quot; publish&quot;)</span>
+<span class="fc" id="L51">            .kind(Span.Kind.PRODUCER)</span>
+<span class="fc" id="L52">            .tag(&quot;messaging.destination.name&quot;, topic)</span>
+<span class="fc" id="L53">            .start();</span>
+<span class="fc" id="L54">    propagator.inject(</span>
+<span class="fc" id="L55">        span.context(), headers, (h, k, v) -&gt; h.add(k, v.getBytes(StandardCharsets.UTF_8)));</span>
+<span class="fc" id="L56">    return span;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

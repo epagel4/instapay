@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SettlementSagaService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">payment-application</a> &gt; <a href="index.source.html" class="el_package">com.instapay.payment.application.transfer</a> &gt; <span class="el_source">SettlementSagaService.java</span></div><h1>SettlementSagaService.java</h1><pre class="source lang-java linenums">package com.instapay.payment.application.transfer;
+
+import com.instapay.payment.application.port.out.AuditLog;
+import com.instapay.payment.application.port.out.LedgerRepository;
+import com.instapay.payment.application.port.out.SettlementSagaRepository;
+import com.instapay.payment.application.port.out.TransactionRunner;
+import com.instapay.payment.application.port.out.TransferRepository;
+import com.instapay.payment.domain.account.AccountId;
+import com.instapay.payment.domain.ledger.JournalEntry;
+import com.instapay.payment.domain.ledger.JournalEntryId;
+import com.instapay.payment.domain.ledger.JournalEntryType;
+import com.instapay.payment.domain.ledger.SystemAccounts;
+import com.instapay.payment.domain.transfer.SagaState;
+import com.instapay.payment.domain.transfer.SettlementSaga;
+import com.instapay.payment.domain.transfer.Transfer;
+import com.instapay.payment.domain.transfer.TransferEvent;
+import com.instapay.payment.domain.transfer.TransferId;
+import java.time.Clock;
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * Drives settlement sagas to an end: settled, rejected (compensate) or overdue (compensate).
+ * Idempotent: a result for a saga that already finished changes nothing.
+ */
+public class SettlementSagaService {
+
+<span class="fc" id="L29">  public enum Outcome {</span>
+<span class="fc" id="L30">    COMPLETED,</span>
+<span class="fc" id="L31">    COMPENSATED,</span>
+    /** Result for a saga that already finished the same way, or a repeated rejection. */
+<span class="fc" id="L33">    DUPLICATE,</span>
+    /**
+     * Settled after we compensated on timeout. Must not happen if the clearing house honours
+     * expiresAt; if it does, money left twice and needs manual reconciliation.
+     */
+<span class="fc" id="L38">    LATE_SETTLEMENT,</span>
+<span class="fc" id="L39">    UNKNOWN_TRANSFER</span>
+  }
+
+  private final SettlementSagaRepository sagas;
+  private final TransferRepository transfers;
+  private final LedgerRepository ledger;
+  private final AuditLog audit;
+  private final TransactionRunner tx;
+  private final Clock clock;
+
+  public SettlementSagaService(
+      SettlementSagaRepository sagas,
+      TransferRepository transfers,
+      LedgerRepository ledger,
+      AuditLog audit,
+      TransactionRunner tx,
+<span class="fc" id="L55">      Clock clock) {</span>
+<span class="fc" id="L56">    this.sagas = sagas;</span>
+<span class="fc" id="L57">    this.transfers = transfers;</span>
+<span class="fc" id="L58">    this.ledger = ledger;</span>
+<span class="fc" id="L59">    this.audit = audit;</span>
+<span class="fc" id="L60">    this.tx = tx;</span>
+<span class="fc" id="L61">    this.clock = clock;</span>
+<span class="fc" id="L62">  }</span>
+
+  public Outcome onSettlementResult(TransferId id, boolean settled, String reason) {
+<span class="fc" id="L65">    return tx.inTransaction(</span>
+        () -&gt; {
+<span class="fc" id="L67">          Optional&lt;SettlementSaga&gt; found = sagas.findByIdForUpdate(id);</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">          if (found.isEmpty()) {</span>
+<span class="fc" id="L69">            return Outcome.UNKNOWN_TRANSFER;</span>
+          }
+<span class="fc" id="L71">          SettlementSaga saga = found.get();</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">          if (!saga.isAwaiting()) {</span>
+<span class="fc bfc" id="L73" title="All 4 branches covered.">            return settled &amp;&amp; saga.state() == SagaState.COMPENSATED</span>
+<span class="fc" id="L74">                ? Outcome.LATE_SETTLEMENT</span>
+<span class="fc" id="L75">                : Outcome.DUPLICATE;</span>
+          }
+<span class="fc" id="L77">          Transfer transfer = transfers.findById(id).orElseThrow();</span>
+<span class="fc" id="L78">          Instant now = clock.instant();</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">          if (settled) {</span>
+<span class="fc" id="L80">            saga.settled(now);</span>
+<span class="fc" id="L81">            transfer.complete(now);</span>
+<span class="fc" id="L82">            post(</span>
+                JournalEntryType.SETTLEMENT,
+                transfer,
+                SystemAccounts.SETTLEMENT_IN_TRANSIT,
+                SystemAccounts.SETTLEMENT,
+                now);
+<span class="fc" id="L88">            audit.append(TransferEvent.of(TransferEvent.Type.COMPLETED, transfer, null, now));</span>
+          } else {
+<span class="fc" id="L90">            saga.rejected(reason, now);</span>
+<span class="fc" id="L91">            compensate(transfer, reason, now);</span>
+          }
+<span class="fc" id="L93">          sagas.update(saga);</span>
+<span class="fc" id="L94">          transfers.update(transfer);</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">          return settled ? Outcome.COMPLETED : Outcome.COMPENSATED;</span>
+        });
+  }
+
+  /** Compensates sagas whose settlement can no longer arrive. Returns how many. */
+  public int compensateOverdue(int limit) {
+<span class="fc" id="L101">    return tx.inTransaction(</span>
+        () -&gt; {
+<span class="fc" id="L103">          Instant now = clock.instant();</span>
+<span class="fc" id="L104">          List&lt;SettlementSaga&gt; overdue = sagas.lockOverdue(now, limit);</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">          for (SettlementSaga saga : overdue) {</span>
+<span class="fc" id="L106">            saga.timedOut(now);</span>
+<span class="fc" id="L107">            Transfer transfer = transfers.findById(saga.transferId()).orElseThrow();</span>
+<span class="fc" id="L108">            compensate(transfer, SettlementSaga.TIMEOUT_REASON, now);</span>
+<span class="fc" id="L109">            sagas.update(saga);</span>
+<span class="fc" id="L110">            transfers.update(transfer);</span>
+<span class="fc" id="L111">          }</span>
+<span class="fc" id="L112">          return overdue.size();</span>
+        });
+  }
+
+  /** Returns the held amount to the debtor. Credits need no lock: they only increase balance. */
+  private void compensate(Transfer transfer, String reason, Instant now) {
+<span class="fc" id="L118">    transfer.fail(reason, now);</span>
+<span class="fc" id="L119">    post(</span>
+        JournalEntryType.COMPENSATION,
+        transfer,
+        SystemAccounts.SETTLEMENT_IN_TRANSIT,
+<span class="fc" id="L123">        transfer.debtor().account(),</span>
+        now);
+<span class="fc" id="L125">    audit.append(TransferEvent.of(TransferEvent.Type.FAILED, transfer, reason, now));</span>
+<span class="fc" id="L126">  }</span>
+
+  private void post(JournalEntryType type, Transfer t, AccountId from, AccountId to, Instant now) {
+<span class="fc" id="L129">    ledger.append(</span>
+<span class="fc" id="L130">        JournalEntry.move(JournalEntryId.newId(), type, t.id().value(), from, to, t.amount(), now));</span>
+<span class="fc" id="L131">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

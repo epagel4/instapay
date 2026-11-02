@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JdbcSettlementSagaRepository.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">payment-adapters</a> &gt; <a href="index.source.html" class="el_package">com.instapay.payment.adapters.persistence</a> &gt; <span class="el_source">JdbcSettlementSagaRepository.java</span></div><h1>JdbcSettlementSagaRepository.java</h1><pre class="source lang-java linenums">package com.instapay.payment.adapters.persistence;
+
+import com.instapay.payment.application.port.out.SettlementSagaRepository;
+import com.instapay.payment.domain.transfer.SagaState;
+import com.instapay.payment.domain.transfer.SettlementSaga;
+import com.instapay.payment.domain.transfer.TransferId;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public class JdbcSettlementSagaRepository implements SettlementSagaRepository {
+
+<span class="fc" id="L19">  private static final RowMapper&lt;SettlementSaga&gt; MAPPER =</span>
+      (rs, i) -&gt; {
+<span class="fc" id="L21">        Timestamp finishedAt = rs.getTimestamp(&quot;finished_at&quot;);</span>
+<span class="fc" id="L22">        return SettlementSaga.restore(</span>
+<span class="fc" id="L23">            new TransferId(rs.getObject(&quot;transfer_id&quot;, UUID.class)),</span>
+<span class="fc" id="L24">            rs.getTimestamp(&quot;started_at&quot;).toInstant(),</span>
+<span class="fc" id="L25">            rs.getTimestamp(&quot;settlement_expires_at&quot;).toInstant(),</span>
+<span class="fc" id="L26">            rs.getTimestamp(&quot;compensate_after&quot;).toInstant(),</span>
+<span class="fc" id="L27">            SagaState.valueOf(rs.getString(&quot;state&quot;)),</span>
+<span class="fc" id="L28">            rs.getString(&quot;reason&quot;),</span>
+<span class="fc bfc" id="L29" title="All 2 branches covered.">            finishedAt == null ? null : finishedAt.toInstant());</span>
+      };
+
+  private final JdbcTemplate jdbc;
+
+<span class="fc" id="L34">  public JdbcSettlementSagaRepository(JdbcTemplate jdbc) {</span>
+<span class="fc" id="L35">    this.jdbc = jdbc;</span>
+<span class="fc" id="L36">  }</span>
+
+  @Override
+  public void insert(SettlementSaga s) {
+<span class="fc" id="L40">    jdbc.update(</span>
+        &quot;&quot;&quot;
+        INSERT INTO settlement_saga (transfer_id, state, started_at, settlement_expires_at, compensate_after)
+        VALUES (?, ?, ?, ?, ?)
+        &quot;&quot;&quot;,
+<span class="fc" id="L45">        s.transferId().value(),</span>
+<span class="fc" id="L46">        s.state().name(),</span>
+<span class="fc" id="L47">        Timestamp.from(s.startedAt()),</span>
+<span class="fc" id="L48">        Timestamp.from(s.settlementExpiresAt()),</span>
+<span class="fc" id="L49">        Timestamp.from(s.compensateAfter()));</span>
+<span class="fc" id="L50">  }</span>
+
+  @Override
+  public Optional&lt;SettlementSaga&gt; findByIdForUpdate(TransferId id) {
+<span class="fc" id="L54">    return jdbc</span>
+<span class="fc" id="L55">        .query(&quot;SELECT * FROM settlement_saga WHERE transfer_id = ? FOR UPDATE&quot;, MAPPER, id.value())</span>
+<span class="fc" id="L56">        .stream()</span>
+<span class="fc" id="L57">        .findFirst();</span>
+  }
+
+  @Override
+  public List&lt;SettlementSaga&gt; lockOverdue(Instant now, int limit) {
+<span class="fc" id="L62">    return jdbc.query(</span>
+        &quot;&quot;&quot;
+        SELECT * FROM settlement_saga
+        WHERE state = 'AWAITING_SETTLEMENT' AND compensate_after &lt;= ?
+        ORDER BY compensate_after
+        LIMIT ?
+        FOR UPDATE SKIP LOCKED
+        &quot;&quot;&quot;,
+        MAPPER,
+<span class="fc" id="L71">        Timestamp.from(now),</span>
+<span class="fc" id="L72">        limit);</span>
+  }
+
+  @Override
+  public void update(SettlementSaga s) {
+<span class="fc" id="L77">    jdbc.update(</span>
+        &quot;UPDATE settlement_saga SET state = ?, reason = ?, finished_at = ? WHERE transfer_id = ?&quot;,
+<span class="fc" id="L79">        s.state().name(),</span>
+<span class="fc" id="L80">        s.reason().orElse(null),</span>
+<span class="fc" id="L81">        s.finishedAt().map(Timestamp::from).orElse(null),</span>
+<span class="fc" id="L82">        s.transferId().value());</span>
+<span class="fc" id="L83">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

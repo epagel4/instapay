@@ -1,0 +1,3 @@
+/Users/epeagel/Documents/Projetos/instapay/settlement-service/settlement-domain/build/classes/java/main/com/instapay/settlement/domain/SettlementOrder.class
+/Users/epeagel/Documents/Projetos/instapay/settlement-service/settlement-domain/build/classes/java/main/com/instapay/settlement/domain/SettlementStatus.class
+/Users/epeagel/Documents/Projetos/instapay/settlement-service/settlement-domain/build/classes/java/main/com/instapay/settlement/domain/Settlement.class

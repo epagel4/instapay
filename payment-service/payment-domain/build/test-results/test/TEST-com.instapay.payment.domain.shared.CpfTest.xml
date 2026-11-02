@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.instapay.payment.domain.shared.CpfTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-11-02T16:09:38.442Z" hostname="MacBook-Pro-de-Eduardo.local" time="0.336">
+  <properties/>
+  <testcase name="acceptsEveryCpfWithCorrectCheckDigits" classname="com.instapay.payment.domain.shared.CpfTest" time="0.057"/>
+  <testcase name="rejectsAnyTamperedCheckDigit" classname="com.instapay.payment.domain.shared.CpfTest" time="0.063"/>
+  <testcase name="normalizesFormatsAndMasks()" classname="com.instapay.payment.domain.shared.CpfTest" time="0.0"/>
+  <testcase name="[1] raw=" classname="com.instapay.payment.domain.shared.CpfTest" time="0.0"/>
+  <testcase name="[2] raw=123" classname="com.instapay.payment.domain.shared.CpfTest" time="0.0"/>
+  <testcase name="[3] raw=1234567890a" classname="com.instapay.payment.domain.shared.CpfTest" time="0.0"/>
+  <testcase name="[4] raw=111.111.111-11" classname="com.instapay.payment.domain.shared.CpfTest" time="0.0"/>
+  <testcase name="[5] raw=000.000.000-00" classname="com.instapay.payment.domain.shared.CpfTest" time="0.0"/>
+  <testcase name="[6] raw=529982247250" classname="com.instapay.payment.domain.shared.CpfTest" time="0.001"/>
+  <system-out><![CDATA[timestamp = 2026-11-02T13:09:38.499350, CpfTest:acceptsEveryCpfWithCorrectCheckDigits = 
+                              |-----------------------jqwik-----------------------
+tries = 1000                  | # of calls to property
+checks = 1000                 | # of not rejected calls
+generation = RANDOMIZED       | parameters are randomly generated
+after-failure = SAMPLE_FIRST  | try previously failed sample, then previous seed
+when-fixed-seed = ALLOW       | fixing the random seed is allowed
+edge-cases#mode = MIXIN       | edge cases are mixed in
+edge-cases#total = 0          | # of all combined edge cases
+edge-cases#tried = 0          | # of edge cases tried in current run
+seed = -2709312791923474648   | random seed to reproduce generated values
+
+
+timestamp = 2026-11-02T13:09:38.562068, CpfTest:rejectsAnyTamperedCheckDigit = 
+                              |-----------------------jqwik-----------------------
+tries = 1000                  | # of calls to property
+checks = 1000                 | # of not rejected calls
+generation = RANDOMIZED       | parameters are randomly generated
+after-failure = SAMPLE_FIRST  | try previously failed sample, then previous seed
+when-fixed-seed = ALLOW       | fixing the random seed is allowed
+edge-cases#mode = MIXIN       | edge cases are mixed in
+edge-cases#total = 0          | # of all combined edge cases
+edge-cases#tried = 0          | # of edge cases tried in current run
+seed = 1470994411017566907    | random seed to reproduce generated values
+
+
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

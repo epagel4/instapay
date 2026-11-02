@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PixKeyType.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">payment-domain</a> &gt; <a href="index.source.html" class="el_package">com.instapay.payment.domain.pixkey</a> &gt; <span class="el_source">PixKeyType.java</span></div><h1>PixKeyType.java</h1><pre class="source lang-java linenums">package com.instapay.payment.domain.pixkey;
+
+import com.instapay.payment.domain.shared.Cpf;
+import com.instapay.payment.domain.shared.DomainException;
+import java.util.Locale;
+import java.util.regex.Pattern;
+
+/** Each key type knows how to validate and normalize its raw value. */
+<span class="fc" id="L9">public enum PixKeyType {</span>
+<span class="fc" id="L10">  CPF {</span>
+    @Override
+    String normalize(String raw) {
+<span class="fc" id="L13">      return new Cpf(raw).value();</span>
+    }
+  },
+<span class="fc" id="L16">  EMAIL {</span>
+    private static final int MAX_LENGTH = 77; // Pix DICT limit
+<span class="fc" id="L18">    private static final Pattern FORMAT =</span>
+<span class="fc" id="L19">        Pattern.compile(</span>
+            &quot;^[a-z0-9.!#$%&amp;'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+$&quot;);
+
+    @Override
+    String normalize(String raw) {
+<span class="fc" id="L24">      String email = raw.strip().toLowerCase(Locale.ROOT);</span>
+<span class="fc bfc" id="L25" title="All 4 branches covered.">      return check(email.length() &lt;= MAX_LENGTH &amp;&amp; FORMAT.matcher(email).matches(), email);</span>
+    }
+  },
+<span class="fc" id="L28">  PHONE {</span>
+<span class="fc" id="L29">    private static final Pattern E164 = Pattern.compile(&quot;^\\+[1-9]\\d{7,14}$&quot;);</span>
+
+    @Override
+    String normalize(String raw) {
+<span class="fc" id="L33">      String phone = raw.replaceAll(&quot;[\\s()-]&quot;, &quot;&quot;);</span>
+<span class="fc" id="L34">      return check(E164.matcher(phone).matches(), phone);</span>
+    }
+  },
+<span class="fc" id="L37">  RANDOM {</span>
+<span class="fc" id="L38">    private static final Pattern UUID_FORMAT =</span>
+<span class="fc" id="L39">        Pattern.compile(&quot;^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$&quot;);</span>
+
+    @Override
+    String normalize(String raw) {
+<span class="fc" id="L43">      String key = raw.strip().toLowerCase(Locale.ROOT);</span>
+<span class="fc" id="L44">      return check(UUID_FORMAT.matcher(key).matches(), key);</span>
+    }
+  };
+
+  abstract String normalize(String raw);
+
+  String check(boolean valid, String normalized) {
+<span class="fc bfc" id="L51" title="All 2 branches covered.">    if (!valid) {</span>
+<span class="fc" id="L52">      throw new DomainException(&quot;pixkey.invalid&quot;, &quot;Invalid &quot; + name() + &quot; key&quot;);</span>
+    }
+<span class="fc" id="L54">    return normalized;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

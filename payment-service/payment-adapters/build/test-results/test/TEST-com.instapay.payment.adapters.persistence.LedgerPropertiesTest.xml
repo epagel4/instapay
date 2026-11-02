@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.instapay.payment.adapters.persistence.LedgerPropertiesTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-11-02T16:08:43.216Z" hostname="MacBook-Pro-de-Eduardo.local" time="20.716">
+  <properties/>
+  <testcase name="sumOfAllPostingsIsAlwaysZero" classname="com.instapay.payment.adapters.persistence.LedgerPropertiesTest" time="20.716"/>
+  <system-out><![CDATA[13:08:43.420 [Test worker] INFO org.testcontainers.images.PullPolicy -- Image pull policy will be performed by: DefaultPullPolicy()
+13:08:43.426 [Test worker] INFO org.testcontainers.utility.ImageNameSubstitutor -- Image name substitution will be performed by: DefaultImageNameSubstitutor (composite of 'ConfigurationFileImageNameSubstitutor' and 'PrefixingImageNameSubstitutor')
+13:08:43.433 [Test worker] INFO org.testcontainers.DockerClientFactory -- Testcontainers version: 1.21.4
+13:08:44.268 [Test worker] INFO org.testcontainers.dockerclient.DockerClientProviderStrategy -- Found Docker environment with Docker accessed via Unix socket (/Users/epeagel/.docker/run/docker.sock)
+13:08:44.269 [Test worker] INFO org.testcontainers.DockerClientFactory -- Docker host IP address is localhost
+13:08:44.304 [Test worker] INFO org.testcontainers.DockerClientFactory -- Connected to docker: 
+  Server Version: 29.9.2
+  API Version: 1.56
+  Operating System: Docker Desktop
+  Total Memory: 7934 MB
+  Labels: 
+    com.docker.desktop.address=unix:///Users/epeagel/Library/Containers/com.docker.docker/Data/docker-cli.sock
+13:08:44.811 [Test worker] INFO tc.testcontainers/ryuk:0.12.0 -- Creating container for image: testcontainers/ryuk:0.12.0
+13:08:45.904 [Test worker] INFO tc.testcontainers/ryuk:0.12.0 -- Container testcontainers/ryuk:0.12.0 is starting: ba7e20f817491587507b0d964cd6af23172f983cb5212af633402036d19f7b22
+13:08:46.360 [Test worker] INFO tc.testcontainers/ryuk:0.12.0 -- Container testcontainers/ryuk:0.12.0 started in PT1.548651S
+13:08:46.364 [Test worker] INFO org.testcontainers.utility.RyukResourceReaper -- Ryuk started - will monitor and terminate Testcontainers containers on JVM exit
+13:08:46.364 [Test worker] INFO org.testcontainers.DockerClientFactory -- Checking the system...
+13:08:46.365 [Test worker] INFO org.testcontainers.DockerClientFactory -- ✔︎ Docker server version should be at least 1.6.0
+13:08:46.365 [Test worker] INFO tc.postgres:16-alpine -- Creating container for image: postgres:16-alpine
+13:08:46.491 [Test worker] INFO tc.postgres:16-alpine -- Container postgres:16-alpine is starting: 206c0285acce55ed69f03fe7a230e77feead40ed4eade5806a4856ca4b912d19
+13:08:48.045 [Test worker] INFO tc.postgres:16-alpine -- Container postgres:16-alpine started in PT1.679643S
+13:08:48.047 [Test worker] INFO tc.postgres:16-alpine -- Container is started (JDBC URL: jdbc:postgresql://localhost:52301/test?loggerLevel=OFF)
+13:08:48.486 [Test worker] INFO org.flywaydb.core.FlywayExecutor -- Database: jdbc:postgresql://localhost:52301/test?loggerLevel=OFF (PostgreSQL 16.15)
+13:08:48.536 [Test worker] INFO org.flywaydb.core.internal.schemahistory.JdbcTableSchemaHistory -- Schema history table "public"."flyway_schema_history" does not exist yet
+13:08:48.541 [Test worker] INFO org.flywaydb.core.internal.command.DbValidate -- Successfully validated 6 migrations (execution time 00:00.021s)
+13:08:48.558 [Test worker] INFO org.flywaydb.core.internal.schemahistory.JdbcTableSchemaHistory -- Creating Schema History table "public"."flyway_schema_history" ...
+13:08:48.633 [Test worker] INFO org.flywaydb.core.internal.command.DbMigrate -- Current version of schema "public": << Empty Schema >>
+13:08:48.657 [Test worker] INFO org.flywaydb.core.internal.command.DbMigrate -- Migrating schema "public" to version "1 - ledger"
+13:08:48.690 [Test worker] INFO org.flywaydb.core.internal.command.DbMigrate -- Migrating schema "public" to version "2 - accounts transfers idempotency"
+13:08:48.707 [Test worker] INFO org.flywaydb.core.internal.command.DbMigrate -- Migrating schema "public" to version "3 - pix keys"
+13:08:48.728 [Test worker] INFO org.flywaydb.core.internal.command.DbMigrate -- Migrating schema "public" to version "4 - settlement saga outbox audit"
+13:08:48.749 [Test worker] INFO org.flywaydb.core.internal.command.DbMigrate -- Migrating schema "public" to version "5 - refunds limits"
+13:08:48.799 [Test worker] INFO org.flywaydb.core.internal.command.DbMigrate -- Migrating schema "public" to version "6 - outbox trace context"
+13:08:48.817 [Test worker] INFO org.flywaydb.core.internal.command.DbMigrate -- Successfully applied 6 migrations to schema "public", now at version v6 (execution time 00:00.079s)
+timestamp = 2026-11-02T13:09:03.929363, LedgerPropertiesTest:sumOfAllPostingsIsAlwaysZero = 
+                              |-----------------------jqwik-----------------------
+tries = 100                   | # of calls to property
+checks = 100                  | # of not rejected calls
+generation = RANDOMIZED       | parameters are randomly generated
+after-failure = SAMPLE_FIRST  | try previously failed sample, then previous seed
+when-fixed-seed = ALLOW       | fixing the random seed is allowed
+edge-cases#mode = MIXIN       | edge cases are mixed in
+edge-cases#total = 100        | # of all combined edge cases
+edge-cases#tried = 20         | # of edge cases tried in current run
+seed = 2178458004731444866    | random seed to reproduce generated values
+
+
+]]></system-out>
+  <system-err><![CDATA[nov. 02, 2026 1:08:43 PM net.jqwik.engine.properties.RandomizedShrinkablesGenerator logEdgeCasesOutnumberTriesIfApplicable
+INFORMAÇÕES: Edge case generation exceeds number of tries. Stopped after 100 generated cases.
+]]></system-err>
+</testsuite>

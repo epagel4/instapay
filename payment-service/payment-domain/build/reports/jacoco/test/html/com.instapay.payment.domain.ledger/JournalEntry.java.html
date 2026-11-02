@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JournalEntry.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">payment-domain</a> &gt; <a href="index.source.html" class="el_package">com.instapay.payment.domain.ledger</a> &gt; <span class="el_source">JournalEntry.java</span></div><h1>JournalEntry.java</h1><pre class="source lang-java linenums">package com.instapay.payment.domain.ledger;
+
+import com.instapay.payment.domain.account.AccountId;
+import com.instapay.payment.domain.shared.DomainException;
+import com.instapay.payment.domain.shared.Money;
+import java.time.Instant;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
+
+/**
+ * Double-entry accounting transaction: an immutable set of postings that always sums to zero, so
+ * money is only ever moved, never created or destroyed. {@code reference} links it to the business
+ * operation (e.g. the transfer id).
+ */
+public record JournalEntry(
+    JournalEntryId id,
+    JournalEntryType type,
+    UUID reference,
+    Instant occurredAt,
+    List&lt;Posting&gt; postings) {
+
+<span class="fc" id="L23">  public JournalEntry {</span>
+<span class="fc" id="L24">    Objects.requireNonNull(id, &quot;id&quot;);</span>
+<span class="fc" id="L25">    Objects.requireNonNull(type, &quot;type&quot;);</span>
+<span class="fc" id="L26">    Objects.requireNonNull(reference, &quot;reference&quot;);</span>
+<span class="fc" id="L27">    Objects.requireNonNull(occurredAt, &quot;occurredAt&quot;);</span>
+<span class="fc" id="L28">    postings = List.copyOf(postings);</span>
+<span class="fc bfc" id="L29" title="All 2 branches covered.">    if (postings.size() &lt; 2) {</span>
+<span class="fc" id="L30">      throw new DomainException(&quot;ledger.entry.too_few_postings&quot;, &quot;Needs at least two postings&quot;);</span>
+    }
+<span class="fc bfc" id="L32" title="All 2 branches covered.">    if (postings.stream().map(Posting::account).distinct().count() != postings.size()) {</span>
+<span class="fc" id="L33">      throw new DomainException(&quot;ledger.entry.duplicate_account&quot;, &quot;One posting per account&quot;);</span>
+    }
+<span class="fc bfc" id="L35" title="All 2 branches covered.">    if (!sum(postings).isZero()) {</span>
+<span class="fc" id="L36">      throw new DomainException(&quot;ledger.entry.unbalanced&quot;, &quot;Postings must sum to zero&quot;);</span>
+    }
+<span class="fc" id="L38">  }</span>
+
+  public static JournalEntry transfer(
+      JournalEntryId id, UUID reference, AccountId from, AccountId to, Money amount, Instant at) {
+<span class="fc" id="L42">    return move(id, JournalEntryType.TRANSFER, reference, from, to, amount, at);</span>
+  }
+
+  /** Two-posting entry moving {@code amount} from one account to another. */
+  public static JournalEntry move(
+      JournalEntryId id,
+      JournalEntryType type,
+      UUID reference,
+      AccountId from,
+      AccountId to,
+      Money amount,
+      Instant at) {
+<span class="fc" id="L54">    requirePositive(amount);</span>
+<span class="fc" id="L55">    return new JournalEntry(</span>
+        id,
+        type,
+        reference,
+        at,
+<span class="fc" id="L60">        List.of(new Posting(from, amount.negate()), new Posting(to, amount)));</span>
+  }
+
+  public static JournalEntry deposit(JournalEntryId id, AccountId to, Money amount, Instant at) {
+<span class="fc" id="L64">    requirePositive(amount);</span>
+<span class="fc" id="L65">    return new JournalEntry(</span>
+        id,
+        JournalEntryType.DEPOSIT,
+<span class="fc" id="L68">        id.value(),</span>
+        at,
+<span class="fc" id="L70">        List.of(new Posting(SystemAccounts.FUNDING, amount.negate()), new Posting(to, amount)));</span>
+  }
+
+  /** Effect of this entry on the given account's balance (zero if it is not involved). */
+  public Money netAmountFor(AccountId account) {
+<span class="fc" id="L75">    return sum(postings.stream().filter(p -&gt; p.account().equals(account)).toList());</span>
+  }
+
+  private static Money sum(List&lt;Posting&gt; postings) {
+<span class="fc" id="L79">    return postings.stream().map(Posting::amount).reduce(Money.ZERO, Money::plus);</span>
+  }
+
+  private static void requirePositive(Money amount) {
+<span class="fc bfc" id="L83" title="All 2 branches covered.">    if (!amount.isPositive()) {</span>
+<span class="fc" id="L84">      throw new DomainException(&quot;ledger.amount.not_positive&quot;, &quot;Amount must be positive&quot;);</span>
+    }
+<span class="fc" id="L86">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

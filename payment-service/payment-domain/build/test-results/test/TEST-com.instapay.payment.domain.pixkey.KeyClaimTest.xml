@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.instapay.payment.domain.pixkey.KeyClaimTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-11-02T16:09:38.741Z" hostname="MacBook-Pro-de-Eduardo.local" time="0.009">
+  <properties/>
+  <testcase name="sameHolderIsPortabilityConfirmedByDonor()" classname="com.instapay.payment.domain.pixkey.KeyClaimTest" time="0.002"/>
+  <testcase name="eitherSideCancelsButOutsidersCannot()" classname="com.instapay.payment.domain.pixkey.KeyClaimTest" time="0.0"/>
+  <testcase name="differentHolderIsOwnershipCompletedAfterResolutionPeriod()" classname="com.instapay.payment.domain.pixkey.KeyClaimTest" time="0.0"/>
+  <testcase name="[1] type=CPF" classname="com.instapay.payment.domain.pixkey.KeyClaimTest" time="0.0"/>
+  <testcase name="[2] type=RANDOM" classname="com.instapay.payment.domain.pixkey.KeyClaimTest" time="0.0"/>
+  <testcase name="donorCanGiveUpOwnershipEarly()" classname="com.instapay.payment.domain.pixkey.KeyClaimTest" time="0.0"/>
+  <testcase name="resolvedClaimsAreFinal()" classname="com.instapay.payment.domain.pixkey.KeyClaimTest" time="0.001"/>
+  <testcase name="openingValidatesParticipants()" classname="com.instapay.payment.domain.pixkey.KeyClaimTest" time="0.001"/>
+  <testcase name="restoreKeepsStateAndEqualityIsById()" classname="com.instapay.payment.domain.pixkey.KeyClaimTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

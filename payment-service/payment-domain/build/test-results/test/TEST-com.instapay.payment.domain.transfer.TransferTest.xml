@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.instapay.payment.domain.transfer.TransferTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-11-02T16:09:38.806Z" hostname="MacBook-Pro-de-Eduardo.local" time="0.007">
+  <properties/>
+  <testcase name="cannotTransferToSameAccount()" classname="com.instapay.payment.domain.transfer.TransferTest" time="0.001"/>
+  <testcase name="[1] amount=0" classname="com.instapay.payment.domain.transfer.TransferTest" time="0.001"/>
+  <testcase name="[2] amount=-0.01" classname="com.instapay.payment.domain.transfer.TransferTest" time="0.0"/>
+  <testcase name="internalOnlyWhenBothAccountsInSameInstitution()" classname="com.instapay.payment.domain.transfer.TransferTest" time="0.001"/>
+  <testcase name="startsPending()" classname="com.instapay.payment.domain.transfer.TransferTest" time="0.0"/>
+  <testcase name="[1] reason=null" classname="com.instapay.payment.domain.transfer.TransferTest" time="0.001"/>
+  <testcase name="[2] reason=" classname="com.instapay.payment.domain.transfer.TransferTest" time="0.0"/>
+  <testcase name="[3] reason=  " classname="com.instapay.payment.domain.transfer.TransferTest" time="0.001"/>
+  <testcase name="completesOnce()" classname="com.instapay.payment.domain.transfer.TransferTest" time="0.0"/>
+  <testcase name="failsWithReason()" classname="com.instapay.payment.domain.transfer.TransferTest" time="0.0"/>
+  <testcase name="restoreKeepsStateAndEqualityIsById()" classname="com.instapay.payment.domain.transfer.TransferTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

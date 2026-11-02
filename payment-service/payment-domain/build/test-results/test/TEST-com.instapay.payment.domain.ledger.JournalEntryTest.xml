@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.instapay.payment.domain.ledger.JournalEntryTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-11-02T16:09:37.747Z" hostname="MacBook-Pro-de-Eduardo.local" time="0.955">
+  <properties/>
+  <testcase name="everyAcceptedEntrySumsToZero" classname="com.instapay.payment.domain.ledger.JournalEntryTest" time="0.412"/>
+  <testcase name="moneyIsConservedAcrossAnySequence" classname="com.instapay.payment.domain.ledger.JournalEntryTest" time="0.177"/>
+  <testcase name="anyImbalanceIsRejected" classname="com.instapay.payment.domain.ledger.JournalEntryTest" time="0.103"/>
+  <testcase name="structuralInvariants()" classname="com.instapay.payment.domain.ledger.JournalEntryTest" time="0.0"/>
+  <testcase name="postingsAreImmutable()" classname="com.instapay.payment.domain.ledger.JournalEntryTest" time="0.001"/>
+  <testcase name="amountsMustBePositive()" classname="com.instapay.payment.domain.ledger.JournalEntryTest" time="0.001"/>
+  <testcase name="depositIsFundedBySystemAccount()" classname="com.instapay.payment.domain.ledger.JournalEntryTest" time="0.0"/>
+  <testcase name="transferDebitsSourceAndCreditsDestination()" classname="com.instapay.payment.domain.ledger.JournalEntryTest" time="0.0"/>
+  <system-out><![CDATA[timestamp = 2026-11-02T13:09:38.155958, JournalEntryTest:everyAcceptedEntrySumsToZero = 
+                              |-----------------------jqwik-----------------------
+tries = 1000                  | # of calls to property
+checks = 1000                 | # of not rejected calls
+generation = RANDOMIZED       | parameters are randomly generated
+after-failure = SAMPLE_FIRST  | try previously failed sample, then previous seed
+when-fixed-seed = ALLOW       | fixing the random seed is allowed
+edge-cases#mode = MIXIN       | edge cases are mixed in
+edge-cases#total = 8          | # of all combined edge cases
+edge-cases#tried = 8          | # of edge cases tried in current run
+seed = -2159013289627369965   | random seed to reproduce generated values
+
+
+timestamp = 2026-11-02T13:09:38.337050, JournalEntryTest:moneyIsConservedAcrossAnySequence = 
+                              |-----------------------jqwik-----------------------
+tries = 1000                  | # of calls to property
+checks = 1000                 | # of not rejected calls
+generation = RANDOMIZED       | parameters are randomly generated
+after-failure = SAMPLE_FIRST  | try previously failed sample, then previous seed
+when-fixed-seed = ALLOW       | fixing the random seed is allowed
+edge-cases#mode = MIXIN       | edge cases are mixed in
+edge-cases#total = 181        | # of all combined edge cases
+edge-cases#tried = 176        | # of edge cases tried in current run
+seed = -1197550048134484803   | random seed to reproduce generated values
+
+
+timestamp = 2026-11-02T13:09:38.440391, JournalEntryTest:anyImbalanceIsRejected = 
+                              |-----------------------jqwik-----------------------
+tries = 1000                  | # of calls to property
+checks = 1000                 | # of not rejected calls
+generation = RANDOMIZED       | parameters are randomly generated
+after-failure = SAMPLE_FIRST  | try previously failed sample, then previous seed
+when-fixed-seed = ALLOW       | fixing the random seed is allowed
+edge-cases#mode = MIXIN       | edge cases are mixed in
+edge-cases#total = 160        | # of all combined edge cases
+edge-cases#tried = 137        | # of edge cases tried in current run
+seed = -5587048168015305654   | random seed to reproduce generated values
+
+
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

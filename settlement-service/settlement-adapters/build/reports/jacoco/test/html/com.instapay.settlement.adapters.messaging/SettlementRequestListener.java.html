@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SettlementRequestListener.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">settlement-adapters</a> &gt; <a href="index.source.html" class="el_package">com.instapay.settlement.adapters.messaging</a> &gt; <span class="el_source">SettlementRequestListener.java</span></div><h1>SettlementRequestListener.java</h1><pre class="source lang-java linenums">package com.instapay.settlement.adapters.messaging;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.instapay.contracts.SettlementRequest;
+import com.instapay.contracts.SettlementResult;
+import com.instapay.contracts.Topics;
+import com.instapay.settlement.application.SettleService;
+import com.instapay.settlement.domain.Settlement;
+import com.instapay.settlement.domain.SettlementOrder;
+import io.micrometer.core.instrument.MeterRegistry;
+import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.stereotype.Component;
+
+/**
+ * Decision persisted first, reply published after. If publishing fails the record is redelivered,
+ * the stored decision is found and re-published: at-least-once replies without an outbox.
+ */
+@Component
+class SettlementRequestListener {
+
+<span class="fc" id="L25">  private static final Logger log = LoggerFactory.getLogger(SettlementRequestListener.class);</span>
+
+  private final SettleService settle;
+  private final KafkaTemplate&lt;String, String&gt; kafka;
+  private final ObjectMapper json;
+  private final MeterRegistry meters;
+
+  SettlementRequestListener(
+      SettleService settle,
+      KafkaTemplate&lt;String, String&gt; kafka,
+      ObjectMapper json,
+<span class="fc" id="L36">      MeterRegistry meters) {</span>
+<span class="fc" id="L37">    this.settle = settle;</span>
+<span class="fc" id="L38">    this.kafka = kafka;</span>
+<span class="fc" id="L39">    this.json = json;</span>
+<span class="fc" id="L40">    this.meters = meters;</span>
+<span class="fc" id="L41">  }</span>
+
+  @KafkaListener(topics = Topics.SETTLEMENT_REQUESTS, groupId = &quot;settlement-service&quot;)
+  void onRequest(String payload) throws Exception {
+<span class="fc" id="L45">    SettlementRequest r = json.readValue(payload, SettlementRequest.class);</span>
+<span class="fc" id="L46">    Settlement s =</span>
+<span class="fc" id="L47">        settle.settle(</span>
+            new SettlementOrder(
+<span class="fc" id="L49">                r.transferId(),</span>
+<span class="fc" id="L50">                r.debtorIspb(),</span>
+<span class="fc" id="L51">                r.debtorAccount(),</span>
+<span class="fc" id="L52">                r.creditorIspb(),</span>
+<span class="fc" id="L53">                r.creditorAccount(),</span>
+<span class="fc" id="L54">                r.amountCents(),</span>
+<span class="fc" id="L55">                r.expiresAt()));</span>
+<span class="fc" id="L56">    SettlementResult result =</span>
+        new SettlementResult(
+<span class="fc" id="L58">            s.transferId(),</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">            s.isSettled() ? SettlementResult.Status.SETTLED : SettlementResult.Status.REJECTED,</span>
+<span class="fc" id="L60">            s.reason(),</span>
+<span class="fc" id="L61">            s.decidedAt());</span>
+<span class="fc" id="L62">    kafka</span>
+<span class="fc" id="L63">        .send(Topics.SETTLEMENT_RESULTS, s.transferId().toString(), json.writeValueAsString(result))</span>
+<span class="fc" id="L64">        .get(10, TimeUnit.SECONDS);</span>
+<span class="fc" id="L65">    meters</span>
+<span class="fc" id="L66">        .counter(&quot;instapay.settlement.decisions&quot;, &quot;status&quot;, s.status().name().toLowerCase())</span>
+<span class="fc" id="L67">        .increment();</span>
+<span class="fc" id="L68">    log.info(</span>
+        &quot;Transfer {} {}{}&quot;,
+<span class="fc" id="L70">        s.transferId(),</span>
+<span class="fc" id="L71">        s.status(),</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">        s.reason() == null ? &quot;&quot; : &quot; (&quot; + s.reason() + &quot;)&quot;);</span>
+<span class="fc" id="L73">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

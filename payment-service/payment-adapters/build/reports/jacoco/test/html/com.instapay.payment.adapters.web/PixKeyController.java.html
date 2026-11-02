@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PixKeyController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">payment-adapters</a> &gt; <a href="index.source.html" class="el_package">com.instapay.payment.adapters.web</a> &gt; <span class="el_source">PixKeyController.java</span></div><h1>PixKeyController.java</h1><pre class="source lang-java linenums">package com.instapay.payment.adapters.web;
+
+import com.instapay.payment.application.pixkey.PixKeyService;
+import com.instapay.payment.application.pixkey.PixKeyService.KeyOwner;
+import com.instapay.payment.domain.account.AccountId;
+import com.instapay.payment.domain.pixkey.PixKey;
+import com.instapay.payment.domain.pixkey.PixKeyRegistration;
+import com.instapay.payment.domain.pixkey.PixKeyType;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import java.net.URI;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+class PixKeyController {
+
+<span class="fc" id="L27">  record RegisterKeyRequest(@NotNull UUID accountId, @NotNull PixKeyType type, String value) {}</span>
+
+<span class="fc" id="L29">  record KeyResponse(String type, String value, UUID accountId, Instant createdAt) {</span>
+
+    static KeyResponse of(PixKeyRegistration r) {
+<span class="fc" id="L32">      return new KeyResponse(</span>
+<span class="fc" id="L33">          r.key().type().name(), r.key().value(), r.account().value(), r.createdAt());</span>
+    }
+  }
+
+  /** What a payer sees before confirming: enough to recognize the payee, CPF masked. */
+<span class="fc" id="L38">  record KeyLookupResponse(</span>
+      String type,
+      String value,
+      UUID accountId,
+      String institution,
+      String holderName,
+      String holderCpf) {
+
+    static KeyLookupResponse of(KeyOwner owner) {
+<span class="fc" id="L47">      PixKey key = owner.registration().key();</span>
+<span class="fc" id="L48">      return new KeyLookupResponse(</span>
+<span class="fc" id="L49">          key.type().name(),</span>
+<span class="fc" id="L50">          key.value(),</span>
+<span class="fc" id="L51">          owner.account().id().value(),</span>
+<span class="fc" id="L52">          owner.account().institution().value(),</span>
+<span class="fc" id="L53">          owner.account().holder().name(),</span>
+<span class="fc" id="L54">          owner.account().holder().cpf().toString());</span>
+    }
+  }
+
+  private final PixKeyService keys;
+
+<span class="fc" id="L60">  PixKeyController(PixKeyService keys) {</span>
+<span class="fc" id="L61">    this.keys = keys;</span>
+<span class="fc" id="L62">  }</span>
+
+  @PostMapping(&quot;/api/v1/keys&quot;)
+  ResponseEntity&lt;KeyResponse&gt; register(@Valid @RequestBody RegisterKeyRequest request) {
+<span class="fc" id="L66">    PixKeyRegistration r =</span>
+<span class="fc" id="L67">        keys.register(new AccountId(request.accountId()), request.type(), request.value());</span>
+<span class="fc" id="L68">    return ResponseEntity.created(</span>
+<span class="fc" id="L69">            URI.create(&quot;/api/v1/keys/&quot; + r.key().type() + &quot;/&quot; + r.key().value()))</span>
+<span class="fc" id="L70">        .body(KeyResponse.of(r));</span>
+  }
+
+  // shortcut: lookups are unthrottled; the real DICT rate-limits them to prevent data scraping.
+  @GetMapping(&quot;/api/v1/keys/{type}/{value}&quot;)
+  KeyLookupResponse lookup(@PathVariable PixKeyType type, @PathVariable String value) {
+<span class="fc" id="L76">    return KeyLookupResponse.of(keys.lookup(PixKey.of(type, value)));</span>
+  }
+
+  @DeleteMapping(&quot;/api/v1/keys/{type}/{value}&quot;)
+  ResponseEntity&lt;Void&gt; delete(
+      @PathVariable PixKeyType type, @PathVariable String value, @RequestParam UUID accountId) {
+<span class="fc" id="L82">    keys.delete(PixKey.of(type, value), new AccountId(accountId));</span>
+<span class="fc" id="L83">    return ResponseEntity.noContent().build();</span>
+  }
+
+  @GetMapping(&quot;/api/v1/accounts/{accountId}/keys&quot;)
+  List&lt;KeyResponse&gt; listByAccount(@PathVariable UUID accountId) {
+<span class="fc" id="L88">    return keys.listByAccount(new AccountId(accountId)).stream().map(KeyResponse::of).toList();</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

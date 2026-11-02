@@ -1,0 +1,68 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: payment-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/payment
+    username: instapay
+    password: instapay
+    hikari:
+      # Measured (docs/performance): 10 queues at 500 req/s, 40 adds Postgres contention.
+      maximum-pool-size: 20
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 200ms
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      acks: all
+    consumer:
+      auto-offset-reset: earliest
+    listener:
+      observation-enabled: true # consumer span continues the producer's traceparent
+    # template observation stays off: OutboxRelay starts the producer span itself (OutboxTracing)
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true # p50/p95/p99 computed in Prometheus
+  tracing:
+    sampling:
+      probability: 1.0 # demo: every trace; production would sample (e.g. 0.05) or tail-sample
+  otlp:
+    tracing:
+      endpoint: http://localhost:4318/v1/traces
+
+instapay:
+  institution-ispb: "00000001"
+  locking:
+    strategy: pessimistic # pessimistic | optimistic (ADR-002)
+    max-attempts: 10 # retries on optimistic conflicts
+  settlement:
+    timeout: 10s # clearing house must not settle after this (sent as expiresAt)
+    compensation-grace: 5s # extra wait for a late-delivered result before compensating
+    timeout-check-interval-ms: 1000
+    timeout-job-enabled: true
+  outbox:
+    poll-interval-ms: 200
+  limits:
+    zone: America/Sao_Paulo # night window 20h-6h is local time
+    default: # per account, overridable via PUT /accounts/{id}/limits
+      per-transaction: "5000.00"
+      daily: "10000.00"
+      nightly: "1000.00"

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OutboxSettlementGateway.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">payment-adapters</a> &gt; <a href="index.source.html" class="el_package">com.instapay.payment.adapters.messaging</a> &gt; <span class="el_source">OutboxSettlementGateway.java</span></div><h1>OutboxSettlementGateway.java</h1><pre class="source lang-java linenums">package com.instapay.payment.adapters.messaging;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.instapay.contracts.SettlementRequest;
+import com.instapay.contracts.Topics;
+import com.instapay.payment.application.port.out.SettlementGateway;
+import com.instapay.payment.domain.transfer.Transfer;
+import java.time.Instant;
+import java.util.UUID;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Component;
+
+/** Writes the request to the outbox in the caller's transaction; OutboxRelay publishes it. */
+@Component
+class OutboxSettlementGateway implements SettlementGateway {
+
+  private final JdbcTemplate jdbc;
+  private final ObjectMapper json;
+  private final OutboxTracing tracing;
+
+<span class="fc" id="L22">  OutboxSettlementGateway(JdbcTemplate jdbc, ObjectMapper json, OutboxTracing tracing) {</span>
+<span class="fc" id="L23">    this.jdbc = jdbc;</span>
+<span class="fc" id="L24">    this.json = json;</span>
+<span class="fc" id="L25">    this.tracing = tracing;</span>
+<span class="fc" id="L26">  }</span>
+
+  @Override
+  public void requestSettlement(Transfer t, Instant expiresAt) {
+<span class="fc" id="L30">    SettlementRequest request =</span>
+        new SettlementRequest(
+<span class="fc" id="L32">            t.id().value(),</span>
+<span class="fc" id="L33">            t.debtor().institution().value(),</span>
+<span class="fc" id="L34">            t.debtor().account().value(),</span>
+<span class="fc" id="L35">            t.creditor().institution().value(),</span>
+<span class="fc" id="L36">            t.creditor().account().value(),</span>
+<span class="fc" id="L37">            t.amount().cents(),</span>
+<span class="fc" id="L38">            t.createdAt(),</span>
+            expiresAt);
+    try {
+<span class="fc" id="L41">      jdbc.update(</span>
+          &quot;&quot;&quot;
+          INSERT INTO outbox_event (id, topic, message_key, event_type, payload, trace_parent)
+          VALUES (?, ?, ?, ?, ?, ?)
+          &quot;&quot;&quot;,
+<span class="fc" id="L46">          UUID.randomUUID(),</span>
+          Topics.SETTLEMENT_REQUESTS,
+<span class="fc" id="L48">          t.id().toString(),</span>
+          &quot;SettlementRequest&quot;,
+<span class="fc" id="L50">          json.writeValueAsString(request),</span>
+<span class="fc" id="L51">          tracing.currentTraceParent());</span>
+<span class="nc" id="L52">    } catch (JsonProcessingException e) {</span>
+<span class="nc" id="L53">      throw new IllegalStateException(e);</span>
+<span class="fc" id="L54">    }</span>
+<span class="fc" id="L55">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

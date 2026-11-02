@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>KeyClaim.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">payment-domain</a> &gt; <a href="index.source.html" class="el_package">com.instapay.payment.domain.pixkey</a> &gt; <span class="el_source">KeyClaim.java</span></div><h1>KeyClaim.java</h1><pre class="source lang-java linenums">package com.instapay.payment.domain.pixkey;
+
+import com.instapay.payment.domain.account.Account;
+import com.instapay.payment.domain.account.AccountId;
+import com.instapay.payment.domain.shared.DomainException;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Objects;
+import java.util.Optional;
+
+/**
+ * Request to move a registered key from the donor account to the claimer account. The type is
+ * derived, not chosen: same holder CPF means portability, a different holder means ownership.
+ *
+ * &lt;p&gt;shortcut: portability claims never expire (the real DICT cancels them after 7 days without
+ * donor confirmation); would need a scheduled job.
+ */
+public final class KeyClaim {
+
+<span class="fc" id="L20">  public static final Duration RESOLUTION_PERIOD = Duration.ofDays(7);</span>
+
+  private final KeyClaimId id;
+  private final PixKey key;
+  private final KeyClaimType type;
+  private final AccountId donor;
+  private final AccountId claimer;
+  private final Instant openedAt;
+  private final Instant resolutionDeadline;
+  private KeyClaimStatus status;
+  private Instant resolvedAt;
+
+  private KeyClaim(
+      KeyClaimId id,
+      PixKey key,
+      KeyClaimType type,
+      AccountId donor,
+      AccountId claimer,
+      Instant openedAt,
+      Instant resolutionDeadline,
+      KeyClaimStatus status,
+<span class="fc" id="L41">      Instant resolvedAt) {</span>
+<span class="fc" id="L42">    this.id = Objects.requireNonNull(id, &quot;id&quot;);</span>
+<span class="fc" id="L43">    this.key = Objects.requireNonNull(key, &quot;key&quot;);</span>
+<span class="fc" id="L44">    this.type = Objects.requireNonNull(type, &quot;type&quot;);</span>
+<span class="fc" id="L45">    this.donor = Objects.requireNonNull(donor, &quot;donor&quot;);</span>
+<span class="fc" id="L46">    this.claimer = Objects.requireNonNull(claimer, &quot;claimer&quot;);</span>
+<span class="fc" id="L47">    this.openedAt = Objects.requireNonNull(openedAt, &quot;openedAt&quot;);</span>
+<span class="fc" id="L48">    this.resolutionDeadline = Objects.requireNonNull(resolutionDeadline, &quot;resolutionDeadline&quot;);</span>
+<span class="fc" id="L49">    this.status = Objects.requireNonNull(status, &quot;status&quot;);</span>
+<span class="fc" id="L50">    this.resolvedAt = resolvedAt;</span>
+<span class="fc" id="L51">  }</span>
+
+  public static KeyClaim open(
+      KeyClaimId id,
+      PixKeyRegistration registration,
+      Account donor,
+      Account claimer,
+      int keysAlreadyOnClaimer,
+      Instant now) {
+<span class="fc bfc" id="L60" title="All 2 branches covered.">    if (!registration.account().equals(donor.id())) {</span>
+<span class="fc" id="L61">      throw new IllegalArgumentException(&quot;Donor must be the account holding the key&quot;);</span>
+    }
+<span class="fc bfc" id="L63" title="All 2 branches covered.">    if (claimer.id().equals(donor.id())) {</span>
+<span class="fc" id="L64">      throw new DomainException(&quot;keyclaim.already_owner&quot;, &quot;Key already belongs to this account&quot;);</span>
+    }
+<span class="fc" id="L66">    PixKeyRegistration.ensureCanHoldAnotherKey(claimer, keysAlreadyOnClaimer);</span>
+    KeyClaimType type =
+<span class="fc bfc" id="L68" title="All 2 branches covered.">        donor.holder().cpf().equals(claimer.holder().cpf())</span>
+<span class="fc" id="L69">            ? KeyClaimType.PORTABILITY</span>
+<span class="fc" id="L70">            : KeyClaimType.OWNERSHIP;</span>
+<span class="fc" id="L71">    PixKeyType keyType = registration.key().type();</span>
+<span class="pc bpc" id="L72" title="1 of 6 branches missed.">    if (type == KeyClaimType.OWNERSHIP</span>
+        &amp;&amp; keyType != PixKeyType.EMAIL
+        &amp;&amp; keyType != PixKeyType.PHONE) {
+<span class="fc" id="L75">      throw new DomainException(</span>
+          &quot;keyclaim.ownership_not_allowed&quot;,
+          &quot;Only e-mail and phone keys can be claimed by another holder&quot;);
+    }
+<span class="fc" id="L79">    return new KeyClaim(</span>
+        id,
+<span class="fc" id="L81">        registration.key(),</span>
+        type,
+<span class="fc" id="L83">        donor.id(),</span>
+<span class="fc" id="L84">        claimer.id(),</span>
+        now,
+<span class="fc" id="L86">        now.plus(RESOLUTION_PERIOD),</span>
+        KeyClaimStatus.OPEN,
+        null);
+  }
+
+  /** Rehydrates persisted state; no transition rules applied. */
+  public static KeyClaim restore(
+      KeyClaimId id,
+      PixKey key,
+      KeyClaimType type,
+      AccountId donor,
+      AccountId claimer,
+      Instant openedAt,
+      Instant resolutionDeadline,
+      KeyClaimStatus status,
+      Instant resolvedAt) {
+<span class="fc" id="L102">    return new KeyClaim(</span>
+        id, key, type, donor, claimer, openedAt, resolutionDeadline, status, resolvedAt);
+  }
+
+  /** Donor agrees to give the key up (either claim type). */
+  public void confirm(AccountId actor, Instant now) {
+<span class="fc" id="L108">    requireOpen();</span>
+<span class="fc" id="L109">    requireActor(donor, actor);</span>
+<span class="fc" id="L110">    resolve(KeyClaimStatus.COMPLETED, now);</span>
+<span class="fc" id="L111">  }</span>
+
+  /** Either side withdraws; for ownership claims, the donor cancelling means contesting. */
+  public void cancel(AccountId actor, Instant now) {
+<span class="fc" id="L115">    requireOpen();</span>
+<span class="fc bfc" id="L116" title="All 4 branches covered.">    if (!actor.equals(donor) &amp;&amp; !actor.equals(claimer)) {</span>
+<span class="fc" id="L117">      throw new DomainException(&quot;keyclaim.not_participant&quot;, &quot;Account is not part of this claim&quot;);</span>
+    }
+<span class="fc" id="L119">    resolve(KeyClaimStatus.CANCELLED, now);</span>
+<span class="fc" id="L120">  }</span>
+
+  /** Claimer takes an uncontested ownership claim once the resolution period is over. */
+  public void complete(AccountId actor, Instant now) {
+<span class="fc" id="L124">    requireOpen();</span>
+<span class="fc" id="L125">    requireActor(claimer, actor);</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">    if (type != KeyClaimType.OWNERSHIP) {</span>
+<span class="fc" id="L127">      throw new DomainException(</span>
+          &quot;keyclaim.requires_donor_confirmation&quot;,
+          &quot;Portability completes only on donor confirmation&quot;);
+    }
+<span class="fc bfc" id="L131" title="All 2 branches covered.">    if (now.isBefore(resolutionDeadline)) {</span>
+<span class="fc" id="L132">      throw new DomainException(</span>
+          &quot;keyclaim.resolution_period_running&quot;, &quot;Donor can contest until &quot; + resolutionDeadline);
+    }
+<span class="fc" id="L135">    resolve(KeyClaimStatus.COMPLETED, now);</span>
+<span class="fc" id="L136">  }</span>
+
+  private void requireOpen() {
+<span class="fc bfc" id="L139" title="All 2 branches covered.">    if (status != KeyClaimStatus.OPEN) {</span>
+<span class="fc" id="L140">      throw new DomainException(&quot;keyclaim.not_open&quot;, &quot;Claim &quot; + id + &quot; is already &quot; + status);</span>
+    }
+<span class="fc" id="L142">  }</span>
+
+  private static void requireActor(AccountId expected, AccountId actor) {
+<span class="fc bfc" id="L145" title="All 2 branches covered.">    if (!expected.equals(actor)) {</span>
+<span class="fc" id="L146">      throw new DomainException(&quot;keyclaim.not_allowed&quot;, &quot;Account cannot perform this action&quot;);</span>
+    }
+<span class="fc" id="L148">  }</span>
+
+  private void resolve(KeyClaimStatus newStatus, Instant now) {
+<span class="fc" id="L151">    status = newStatus;</span>
+<span class="fc" id="L152">    resolvedAt = Objects.requireNonNull(now, &quot;now&quot;);</span>
+<span class="fc" id="L153">  }</span>
+
+  public KeyClaimId id() {
+<span class="fc" id="L156">    return id;</span>
+  }
+
+  public PixKey key() {
+<span class="fc" id="L160">    return key;</span>
+  }
+
+  public KeyClaimType type() {
+<span class="fc" id="L164">    return type;</span>
+  }
+
+  public AccountId donor() {
+<span class="fc" id="L168">    return donor;</span>
+  }
+
+  public AccountId claimer() {
+<span class="fc" id="L172">    return claimer;</span>
+  }
+
+  public Instant openedAt() {
+<span class="fc" id="L176">    return openedAt;</span>
+  }
+
+  public Instant resolutionDeadline() {
+<span class="fc" id="L180">    return resolutionDeadline;</span>
+  }
+
+  public KeyClaimStatus status() {
+<span class="fc" id="L184">    return status;</span>
+  }
+
+  public Optional&lt;Instant&gt; resolvedAt() {
+<span class="fc" id="L188">    return Optional.ofNullable(resolvedAt);</span>
+  }
+
+  @Override
+  public boolean equals(Object o) {
+<span class="pc bpc" id="L193" title="1 of 4 branches missed.">    return o instanceof KeyClaim other &amp;&amp; id.equals(other.id);</span>
+  }
+
+  @Override
+  public int hashCode() {
+<span class="fc" id="L198">    return id.hashCode();</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

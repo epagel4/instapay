@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.instapay.payment.application.transfer.TransferUseCasesTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-11-02T16:09:35.910Z" hostname="MacBook-Pro-de-Eduardo.local" time="0.219">
+  <properties/>
+  <testcase name="spendingTheExactBalanceIsAllowed()" classname="com.instapay.payment.application.transfer.TransferUseCasesTest" time="0.104"/>
+  <testcase name="retriesConcurrencyConflictsUntilSuccess()" classname="com.instapay.payment.application.transfer.TransferUseCasesTest" time="0.042"/>
+  <testcase name="overdueSagaIsCompensatedOnlyAfterGraceAndLateSettlementIsFlagged()" classname="com.instapay.payment.application.transfer.TransferUseCasesTest" time="0.005"/>
+  <testcase name="externalTransferHoldsFundsAndRequestsSettlement()" classname="com.instapay.payment.application.transfer.TransferUseCasesTest" time="0.002"/>
+  <testcase name="completesTransferAndPostsToLedger()" classname="com.instapay.payment.application.transfer.TransferUseCasesTest" time="0.002"/>
+  <testcase name="limitsAreCheckedWithTheInjectedClock()" classname="com.instapay.payment.application.transfer.TransferUseCasesTest" time="0.014"/>
+  <testcase name="unknownAccountsAndTransfersAreNotFound()" classname="com.instapay.payment.application.transfer.TransferUseCasesTest" time="0.007"/>
+  <testcase name="externalTransferWithoutFundsStartsNoSaga()" classname="com.instapay.payment.application.transfer.TransferUseCasesTest" time="0.005"/>
+  <testcase name="blockedDebtorCannotSend()" classname="com.instapay.payment.application.transfer.TransferUseCasesTest" time="0.001"/>
+  <testcase name="internalTransferIsAudited()" classname="com.instapay.payment.application.transfer.TransferUseCasesTest" time="0.001"/>
+  <testcase name="resultForUnknownTransferIsReported()" classname="com.instapay.payment.application.transfer.TransferUseCasesTest" time="0.001"/>
+  <testcase name="rejectsInsufficientFundsWithoutRetryOrWrites()" classname="com.instapay.payment.application.transfer.TransferUseCasesTest" time="0.001"/>
+  <testcase name="settledSagaCompletesTransferAndMovesFundsOutOfTransit()" classname="com.instapay.payment.application.transfer.TransferUseCasesTest" time="0.002"/>
+  <testcase name="rejectedSagaCompensatesDebtor()" classname="com.instapay.payment.application.transfer.TransferUseCasesTest" time="0.002"/>
+  <testcase name="givesUpAfterMaxAttemptsWithNothingWritten()" classname="com.instapay.payment.application.transfer.TransferUseCasesTest" time="0.018"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

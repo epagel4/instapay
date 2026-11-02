@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.instapay.payment.domain.shared.IspbTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-11-02T16:09:38.779Z" hostname="MacBook-Pro-de-Eduardo.local" time="0.002">
+  <properties/>
+  <testcase name="[1] raw=" classname="com.instapay.payment.domain.shared.IspbTest" time="0.0"/>
+  <testcase name="[2] raw=1234567" classname="com.instapay.payment.domain.shared.IspbTest" time="0.0"/>
+  <testcase name="[3] raw=123456789" classname="com.instapay.payment.domain.shared.IspbTest" time="0.0"/>
+  <testcase name="[4] raw=1234567a" classname="com.instapay.payment.domain.shared.IspbTest" time="0.0"/>
+  <testcase name="acceptsEightDigits()" classname="com.instapay.payment.domain.shared.IspbTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

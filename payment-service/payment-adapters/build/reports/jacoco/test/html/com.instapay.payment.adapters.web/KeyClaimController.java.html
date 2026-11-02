@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>KeyClaimController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">payment-adapters</a> &gt; <a href="index.source.html" class="el_package">com.instapay.payment.adapters.web</a> &gt; <span class="el_source">KeyClaimController.java</span></div><h1>KeyClaimController.java</h1><pre class="source lang-java linenums">package com.instapay.payment.adapters.web;
+
+import com.instapay.payment.application.pixkey.PixKeyService;
+import com.instapay.payment.domain.account.AccountId;
+import com.instapay.payment.domain.pixkey.KeyClaim;
+import com.instapay.payment.domain.pixkey.KeyClaimId;
+import com.instapay.payment.domain.pixkey.PixKey;
+import com.instapay.payment.domain.pixkey.PixKeyType;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import java.net.URI;
+import java.time.Instant;
+import java.util.UUID;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping(&quot;/api/v1/key-claims&quot;)
+class KeyClaimController {
+
+<span class="fc" id="L27">  record OpenClaimRequest(</span>
+      @NotNull UUID claimerAccountId, @NotNull PixKeyType keyType, @NotBlank String keyValue) {}
+
+  /** The account performing the action (donor or claimer). */
+<span class="fc" id="L31">  record ClaimActionRequest(@NotNull UUID accountId) {}</span>
+
+<span class="fc" id="L33">  record ClaimResponse(</span>
+      UUID id,
+      String keyType,
+      String keyValue,
+      String type,
+      String status,
+      UUID donorAccountId,
+      UUID claimerAccountId,
+      Instant openedAt,
+      Instant resolutionDeadline,
+      Instant resolvedAt) {
+
+    static ClaimResponse of(KeyClaim c) {
+<span class="fc" id="L46">      return new ClaimResponse(</span>
+<span class="fc" id="L47">          c.id().value(),</span>
+<span class="fc" id="L48">          c.key().type().name(),</span>
+<span class="fc" id="L49">          c.key().value(),</span>
+<span class="fc" id="L50">          c.type().name(),</span>
+<span class="fc" id="L51">          c.status().name(),</span>
+<span class="fc" id="L52">          c.donor().value(),</span>
+<span class="fc" id="L53">          c.claimer().value(),</span>
+<span class="fc" id="L54">          c.openedAt(),</span>
+<span class="fc" id="L55">          c.resolutionDeadline(),</span>
+<span class="fc" id="L56">          c.resolvedAt().orElse(null));</span>
+    }
+  }
+
+  private final PixKeyService keys;
+
+<span class="fc" id="L62">  KeyClaimController(PixKeyService keys) {</span>
+<span class="fc" id="L63">    this.keys = keys;</span>
+<span class="fc" id="L64">  }</span>
+
+  @PostMapping
+  ResponseEntity&lt;ClaimResponse&gt; open(@Valid @RequestBody OpenClaimRequest request) {
+<span class="fc" id="L68">    KeyClaim claim =</span>
+<span class="fc" id="L69">        keys.openClaim(</span>
+<span class="fc" id="L70">            new AccountId(request.claimerAccountId()),</span>
+<span class="fc" id="L71">            PixKey.of(request.keyType(), request.keyValue()));</span>
+<span class="fc" id="L72">    return ResponseEntity.created(URI.create(&quot;/api/v1/key-claims/&quot; + claim.id()))</span>
+<span class="fc" id="L73">        .body(ClaimResponse.of(claim));</span>
+  }
+
+  @GetMapping(&quot;/{id}&quot;)
+  ClaimResponse get(@PathVariable UUID id) {
+<span class="fc" id="L78">    return ClaimResponse.of(keys.getClaim(new KeyClaimId(id)));</span>
+  }
+
+  @PostMapping(&quot;/{id}/confirm&quot;)
+  ClaimResponse confirm(@PathVariable UUID id, @Valid @RequestBody ClaimActionRequest request) {
+<span class="fc" id="L83">    return ClaimResponse.of(</span>
+<span class="fc" id="L84">        keys.confirmClaim(new KeyClaimId(id), new AccountId(request.accountId())));</span>
+  }
+
+  @PostMapping(&quot;/{id}/cancel&quot;)
+  ClaimResponse cancel(@PathVariable UUID id, @Valid @RequestBody ClaimActionRequest request) {
+<span class="fc" id="L89">    return ClaimResponse.of(</span>
+<span class="fc" id="L90">        keys.cancelClaim(new KeyClaimId(id), new AccountId(request.accountId())));</span>
+  }
+
+  @PostMapping(&quot;/{id}/complete&quot;)
+  ClaimResponse complete(@PathVariable UUID id, @Valid @RequestBody ClaimActionRequest request) {
+<span class="fc" id="L95">    return ClaimResponse.of(</span>
+<span class="fc" id="L96">        keys.completeClaim(new KeyClaimId(id), new AccountId(request.accountId())));</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

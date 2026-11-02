@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ObservabilityConfiguration.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">payment-adapters</a> &gt; <a href="index.source.html" class="el_package">com.instapay.payment.adapters.config</a> &gt; <span class="el_source">ObservabilityConfiguration.java</span></div><h1>ObservabilityConfiguration.java</h1><pre class="source lang-java linenums">package com.instapay.payment.adapters.config;
+
+import io.micrometer.observation.ObservationPredicate;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.server.observation.ServerRequestObservationContext;
+
+/** Keeps traces about money movement: drops Prometheus scrapes and scheduler polls. */
+@Configuration(proxyBeanMethods = false)
+<span class="fc" id="L10">class ObservabilityConfiguration {</span>
+
+  @Bean
+  ObservationPredicate ignoreActuatorAndSchedulerPolls() {
+<span class="fc" id="L14">    return (name, context) -&gt;</span>
+<span class="fc bfc" id="L15" title="All 4 branches covered.">        !name.equals(&quot;tasks.scheduled.execution&quot;)</span>
+<span class="fc" id="L16">            &amp;&amp; !(context instanceof ServerRequestObservationContext request</span>
+<span class="fc bfc" id="L17" title="All 2 branches covered.">                &amp;&amp; request.getCarrier().getRequestURI().startsWith(&quot;/actuator&quot;));</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

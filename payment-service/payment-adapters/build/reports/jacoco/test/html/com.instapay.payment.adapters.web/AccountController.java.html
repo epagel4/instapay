@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AccountController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">payment-adapters</a> &gt; <a href="index.source.html" class="el_package">com.instapay.payment.adapters.web</a> &gt; <span class="el_source">AccountController.java</span></div><h1>AccountController.java</h1><pre class="source lang-java linenums">package com.instapay.payment.adapters.web;
+
+import com.instapay.payment.application.account.AccountService;
+import com.instapay.payment.application.account.AccountService.AccountWithBalance;
+import com.instapay.payment.domain.account.Account;
+import com.instapay.payment.domain.account.AccountId;
+import com.instapay.payment.domain.shared.Money;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import java.net.URI;
+import java.util.UUID;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping(&quot;/api/v1/accounts&quot;)
+class AccountController {
+
+<span class="fc" id="L24">  record OpenAccountRequest(@NotBlank String holderName, @NotBlank String holderCpf) {}</span>
+
+<span class="fc" id="L26">  record DepositRequest(@NotBlank String amount) {}</span>
+
+<span class="fc" id="L28">  record AccountResponse(</span>
+      UUID id,
+      String institution,
+      String holderName,
+      String holderCpf,
+      String status,
+      String balance) {
+
+    static AccountResponse of(Account a, Money balance) {
+<span class="fc" id="L37">      return new AccountResponse(</span>
+<span class="fc" id="L38">          a.id().value(),</span>
+<span class="fc" id="L39">          a.institution().value(),</span>
+<span class="fc" id="L40">          a.holder().name(),</span>
+<span class="fc" id="L41">          a.holder().cpf().toString(), // masked</span>
+<span class="fc" id="L42">          a.status().name(),</span>
+<span class="fc" id="L43">          balance.toString());</span>
+    }
+  }
+
+<span class="fc" id="L47">  record DepositResponse(UUID journalEntryId, String balance) {}</span>
+
+  private final AccountService accounts;
+
+<span class="fc" id="L51">  AccountController(AccountService accounts) {</span>
+<span class="fc" id="L52">    this.accounts = accounts;</span>
+<span class="fc" id="L53">  }</span>
+
+  @PostMapping
+  ResponseEntity&lt;AccountResponse&gt; open(@Valid @RequestBody OpenAccountRequest request) {
+<span class="fc" id="L57">    Account account = accounts.open(request.holderName(), request.holderCpf());</span>
+<span class="fc" id="L58">    return ResponseEntity.created(URI.create(&quot;/api/v1/accounts/&quot; + account.id()))</span>
+<span class="fc" id="L59">        .body(AccountResponse.of(account, Money.ZERO));</span>
+  }
+
+  @GetMapping(&quot;/{id}&quot;)
+  AccountResponse get(@PathVariable UUID id) {
+<span class="fc" id="L64">    AccountWithBalance found = accounts.get(new AccountId(id));</span>
+<span class="fc" id="L65">    return AccountResponse.of(found.account(), found.balance());</span>
+  }
+
+  @PostMapping(&quot;/{id}/deposits&quot;)
+  ResponseEntity&lt;DepositResponse&gt; deposit(
+      @PathVariable UUID id, @Valid @RequestBody DepositRequest request) {
+<span class="fc" id="L71">    var result = accounts.deposit(new AccountId(id), Money.of(request.amount()));</span>
+<span class="fc" id="L72">    return ResponseEntity.status(201)</span>
+<span class="fc" id="L73">        .body(new DepositResponse(result.journalEntryId().value(), result.balance().toString()));</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

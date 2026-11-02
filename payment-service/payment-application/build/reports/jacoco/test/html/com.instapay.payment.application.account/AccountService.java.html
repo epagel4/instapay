@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AccountService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">payment-application</a> &gt; <a href="index.source.html" class="el_package">com.instapay.payment.application.account</a> &gt; <span class="el_source">AccountService.java</span></div><h1>AccountService.java</h1><pre class="source lang-java linenums">package com.instapay.payment.application.account;
+
+import com.instapay.payment.application.ResourceNotFoundException;
+import com.instapay.payment.application.port.out.AccountRepository;
+import com.instapay.payment.application.port.out.LedgerRepository;
+import com.instapay.payment.application.port.out.TransactionRunner;
+import com.instapay.payment.domain.account.Account;
+import com.instapay.payment.domain.account.AccountHolder;
+import com.instapay.payment.domain.account.AccountId;
+import com.instapay.payment.domain.ledger.JournalEntry;
+import com.instapay.payment.domain.ledger.JournalEntryId;
+import com.instapay.payment.domain.shared.Cpf;
+import com.instapay.payment.domain.shared.Ispb;
+import com.instapay.payment.domain.shared.Money;
+import java.time.Clock;
+
+public class AccountService {
+
+<span class="nc" id="L19">  public record AccountWithBalance(Account account, Money balance) {}</span>
+
+<span class="nc" id="L21">  public record DepositResult(JournalEntryId journalEntryId, Money balance) {}</span>
+
+  private final AccountRepository accounts;
+  private final LedgerRepository ledger;
+  private final TransactionRunner tx;
+  private final Clock clock;
+  private final Ispb institution;
+
+  public AccountService(
+      AccountRepository accounts,
+      LedgerRepository ledger,
+      TransactionRunner tx,
+      Clock clock,
+<span class="nc" id="L34">      Ispb institution) {</span>
+<span class="nc" id="L35">    this.accounts = accounts;</span>
+<span class="nc" id="L36">    this.ledger = ledger;</span>
+<span class="nc" id="L37">    this.tx = tx;</span>
+<span class="nc" id="L38">    this.clock = clock;</span>
+<span class="nc" id="L39">    this.institution = institution;</span>
+<span class="nc" id="L40">  }</span>
+
+  public Account open(String holderName, String holderCpf) {
+    Account account =
+<span class="nc" id="L44">        Account.open(</span>
+<span class="nc" id="L45">            AccountId.newId(), institution, new AccountHolder(holderName, Cpf.of(holderCpf)));</span>
+<span class="nc" id="L46">    return tx.inTransaction(</span>
+        () -&gt; {
+<span class="nc" id="L48">          accounts.insert(account);</span>
+<span class="nc" id="L49">          return account;</span>
+        });
+  }
+
+  /** Credits never need the debit lock: they can only increase the balance. */
+  public DepositResult deposit(AccountId accountId, Money amount) {
+<span class="nc" id="L55">    return tx.inTransaction(</span>
+        () -&gt; {
+<span class="nc" id="L57">          load(accountId).ensureCanCredit();</span>
+          JournalEntry entry =
+<span class="nc" id="L59">              JournalEntry.deposit(JournalEntryId.newId(), accountId, amount, clock.instant());</span>
+<span class="nc" id="L60">          ledger.append(entry);</span>
+<span class="nc" id="L61">          return new DepositResult(entry.id(), ledger.balanceOf(accountId));</span>
+        });
+  }
+
+  public AccountWithBalance get(AccountId accountId) {
+<span class="nc" id="L66">    return new AccountWithBalance(load(accountId), ledger.balanceOf(accountId));</span>
+  }
+
+  private Account load(AccountId id) {
+<span class="nc" id="L70">    return accounts</span>
+<span class="nc" id="L71">        .findById(id)</span>
+<span class="nc" id="L72">        .orElseThrow(</span>
+            () -&gt;
+<span class="nc" id="L74">                new ResourceNotFoundException(&quot;account.not_found&quot;, &quot;Account &quot; + id + &quot; not found&quot;));</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -1,0 +1,24 @@
+load average at end: 25,89 69,44 113,26
+---- Global Information -------------------------------------------------------------|---Total---|-----OK----|----KO----
+> request count                                                                      |    67,650 |    55,877 |    11,773
+> min response time (ms)                                                             |         2 |         2 |    15,000
+> max response time (ms)                                                             |    60,006 |    37,706 |    60,006
+> mean response time (ms)                                                            |    15,717 |    15,784 |    15,398
+> response time std deviation (ms)                                                   |     9,512 |    10,291 |     4,149
+> response time 50th percentile (ms)                                                 |    15,781 |    16,478 |    15,006
+> response time 75th percentile (ms)                                                 |    18,090 |    18,333 |    15,012
+> response time 95th percentile (ms)                                                 |    35,825 |    36,070 |    15,045
+> response time 99th percentile (ms)                                                 |    36,810 |    36,798 |    35,980
+> mean throughput (rps)                                                              |    407.53 |    336.61 |     70.92
+---- Response Time Distribution ----------------------------------------------------------------------------------------
+> OK: t < 800 ms                                                                                          7,861 (11.62%)
+> OK: 800 ms <= t < 1200 ms                                                                                 450  (0.67%)
+> OK: t >= 1200 ms                                                                                       47,566 (70.31%)
+> KO                                                                                                     11,773  (17.4%)
+---- Errors ------------------------------------------------------------------------------------------------------------
+> i.g.h.c.i.PrematureCloseException: Premature close                                                     11,672 (99.14%)
+> Request timeout to localhost/127.0.0.1:8080 after 60000 ms                                                101  (0.86%)
+========================================================================================================================
+
+Global: 99th percentile of response time is less than 200.0 : false (actual : 36810.0)
+Global: percentage of failed events is less than 1.0 : false (actual : 17.40280857354028)

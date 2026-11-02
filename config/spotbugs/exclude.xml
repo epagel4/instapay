@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+  <!-- Constructor-injected collaborators (JdbcTemplate, etc.) are flagged as "exposed mutable
+       state". Domain immutability is enforced by records + List.copyOf instead. -->
+  <Match>
+    <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+  </Match>
+</FindBugsFilter>

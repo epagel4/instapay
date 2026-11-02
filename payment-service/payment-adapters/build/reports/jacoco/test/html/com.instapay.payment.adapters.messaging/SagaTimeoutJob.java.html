@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SagaTimeoutJob.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">payment-adapters</a> &gt; <a href="index.source.html" class="el_package">com.instapay.payment.adapters.messaging</a> &gt; <span class="el_source">SagaTimeoutJob.java</span></div><h1>SagaTimeoutJob.java</h1><pre class="source lang-java linenums">package com.instapay.payment.adapters.messaging;
+
+import com.instapay.payment.application.transfer.SettlementSagaService;
+import io.micrometer.core.instrument.MeterRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+
+/**
+ * Compensates sagas whose settlement can no longer arrive (e.g. settlement-service down). Disabled
+ * in tests that move the clock forward: it would compensate other tests' sagas.
+ */
+@Component
+@ConditionalOnProperty(
+    name = &quot;instapay.settlement.timeout-job-enabled&quot;,
+    havingValue = &quot;true&quot;,
+    matchIfMissing = true)
+class SagaTimeoutJob {
+
+<span class="fc" id="L22">  private static final Logger log = LoggerFactory.getLogger(SagaTimeoutJob.class);</span>
+
+  private final SettlementSagaService sagas;
+  private final MeterRegistry meters;
+
+<span class="fc" id="L27">  SagaTimeoutJob(SettlementSagaService sagas, MeterRegistry meters) {</span>
+<span class="fc" id="L28">    this.sagas = sagas;</span>
+<span class="fc" id="L29">    this.meters = meters;</span>
+<span class="fc" id="L30">  }</span>
+
+  @Scheduled(fixedDelayString = &quot;${instapay.settlement.timeout-check-interval-ms}&quot;)
+  void compensateOverdue() {
+<span class="fc" id="L34">    int compensated = sagas.compensateOverdue(100);</span>
+<span class="fc bfc" id="L35" title="All 2 branches covered.">    if (compensated &gt; 0) {</span>
+<span class="fc" id="L36">      meters.counter(&quot;instapay.saga.results&quot;, &quot;outcome&quot;, &quot;timeout&quot;).increment(compensated);</span>
+<span class="fc" id="L37">      log.warn(&quot;Compensated {} settlement saga(s) after timeout&quot;, compensated);</span>
+    }
+<span class="fc" id="L39">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IdempotencyRepository.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">payment-adapters</a> &gt; <a href="index.source.html" class="el_package">com.instapay.payment.adapters.persistence</a> &gt; <span class="el_source">IdempotencyRepository.java</span></div><h1>IdempotencyRepository.java</h1><pre class="source lang-java linenums">package com.instapay.payment.adapters.persistence;
+
+import com.instapay.payment.application.port.out.IdempotencyStore;
+import java.time.Duration;
+import java.util.Map;
+import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
+
+/** Postgres is the source of truth; Redis is a read-through cache that may be unavailable. */
+@Repository
+public class IdempotencyRepository implements IdempotencyStore {
+
+<span class="fc" id="L17">  private static final Logger log = LoggerFactory.getLogger(IdempotencyRepository.class);</span>
+<span class="fc" id="L18">  private static final Duration CACHE_TTL = Duration.ofHours(24);</span>
+
+  private final JdbcTemplate jdbc;
+  private final StringRedisTemplate redis;
+
+<span class="fc" id="L23">  public IdempotencyRepository(JdbcTemplate jdbc, StringRedisTemplate redis) {</span>
+<span class="fc" id="L24">    this.jdbc = jdbc;</span>
+<span class="fc" id="L25">    this.redis = redis;</span>
+<span class="fc" id="L26">  }</span>
+
+  @Override
+  public Optional&lt;StoredResponse&gt; findCached(String key) {
+    try {
+<span class="fc" id="L31">      Map&lt;Object, Object&gt; hash = redis.opsForHash().entries(redisKey(key));</span>
+<span class="fc bfc" id="L32" title="All 2 branches covered.">      if (hash.isEmpty()) {</span>
+<span class="fc" id="L33">        return Optional.empty();</span>
+      }
+<span class="fc" id="L35">      return Optional.of(</span>
+          new StoredResponse(
+<span class="fc" id="L37">              (String) hash.get(&quot;fingerprint&quot;),</span>
+<span class="fc" id="L38">              Integer.parseInt((String) hash.get(&quot;status&quot;)),</span>
+<span class="fc" id="L39">              (String) hash.get(&quot;contentType&quot;),</span>
+<span class="fc" id="L40">              (String) hash.get(&quot;body&quot;)));</span>
+<span class="nc" id="L41">    } catch (RuntimeException e) {</span>
+<span class="nc" id="L42">      log.warn(&quot;Idempotency cache unavailable, falling back to Postgres: {}&quot;, e.toString());</span>
+<span class="nc" id="L43">      return Optional.empty();</span>
+    }
+  }
+
+  @Override
+  public Optional&lt;StoredResponse&gt; claim(String key, String fingerprint) {
+    // Blocks on the primary key while another transaction holds the same key uncommitted.
+<span class="fc" id="L50">    int inserted =</span>
+<span class="fc" id="L51">        jdbc.update(</span>
+            &quot;INSERT INTO idempotency_record (key, fingerprint) VALUES (?, ?) ON CONFLICT (key) DO NOTHING&quot;,
+            key,
+            fingerprint);
+<span class="fc bfc" id="L55" title="All 2 branches covered.">    if (inserted == 1) {</span>
+<span class="fc" id="L56">      return Optional.empty();</span>
+    }
+<span class="fc" id="L58">    return jdbc</span>
+<span class="fc" id="L59">        .query(</span>
+            &quot;SELECT fingerprint, status_code, content_type, body FROM idempotency_record WHERE key = ?&quot;,
+            (rs, i) -&gt;
+<span class="fc" id="L62">                new StoredResponse(</span>
+<span class="fc" id="L63">                    rs.getString(&quot;fingerprint&quot;),</span>
+<span class="fc" id="L64">                    rs.getInt(&quot;status_code&quot;),</span>
+<span class="fc" id="L65">                    rs.getString(&quot;content_type&quot;),</span>
+<span class="fc" id="L66">                    rs.getString(&quot;body&quot;)),</span>
+            key)
+<span class="fc" id="L68">        .stream()</span>
+<span class="fc" id="L69">        .findFirst();</span>
+  }
+
+  @Override
+  public void complete(String key, StoredResponse response) {
+<span class="fc" id="L74">    jdbc.update(</span>
+        &quot;UPDATE idempotency_record SET status_code = ?, content_type = ?, body = ? WHERE key = ?&quot;,
+<span class="fc" id="L76">        response.status(),</span>
+<span class="fc" id="L77">        response.contentType(),</span>
+<span class="fc" id="L78">        response.body(),</span>
+        key);
+<span class="fc" id="L80">  }</span>
+
+  @Override
+  public void cache(String key, StoredResponse response) {
+    try {
+<span class="fc" id="L85">      String redisKey = redisKey(key);</span>
+<span class="fc" id="L86">      redis</span>
+<span class="fc" id="L87">          .opsForHash()</span>
+<span class="fc" id="L88">          .putAll(</span>
+              redisKey,
+<span class="fc" id="L90">              Map.of(</span>
+<span class="fc" id="L91">                  &quot;fingerprint&quot;, response.fingerprint(),</span>
+<span class="fc" id="L92">                  &quot;status&quot;, String.valueOf(response.status()),</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">                  &quot;contentType&quot;, response.contentType() == null ? &quot;&quot; : response.contentType(),</span>
+<span class="fc" id="L94">                  &quot;body&quot;, response.body()));</span>
+<span class="fc" id="L95">      redis.expire(redisKey, CACHE_TTL);</span>
+<span class="nc" id="L96">    } catch (RuntimeException e) {</span>
+<span class="nc" id="L97">      log.warn(&quot;Could not cache idempotent response: {}&quot;, e.toString());</span>
+<span class="fc" id="L98">    }</span>
+<span class="fc" id="L99">  }</span>
+
+  private static String redisKey(String key) {
+<span class="fc" id="L102">    return &quot;idempotency:&quot; + key;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -1,0 +1,6 @@
+/Users/epeagel/Documents/Projetos/instapay/settlement-service/settlement-adapters/build/classes/java/main/com/instapay/settlement/adapters/config/ObservabilityConfiguration.class
+/Users/epeagel/Documents/Projetos/instapay/settlement-service/settlement-adapters/build/classes/java/main/com/instapay/settlement/adapters/config/SettlementConfiguration.class
+/Users/epeagel/Documents/Projetos/instapay/settlement-service/settlement-adapters/build/classes/java/main/com/instapay/settlement/adapters/web/SettlementController.class
+/Users/epeagel/Documents/Projetos/instapay/settlement-service/settlement-adapters/build/classes/java/main/com/instapay/settlement/adapters/persistence/JdbcSettlementRepository.class
+/Users/epeagel/Documents/Projetos/instapay/settlement-service/settlement-adapters/build/classes/java/main/com/instapay/settlement/adapters/SettlementServiceApplication.class
+/Users/epeagel/Documents/Projetos/instapay/settlement-service/settlement-adapters/build/classes/java/main/com/instapay/settlement/adapters/messaging/SettlementRequestListener.class

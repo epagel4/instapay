@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.instapay.payment.domain.transfer.RefundTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-02T16:09:38.794Z" hostname="MacBook-Pro-de-Eduardo.local" time="0.004">
+  <properties/>
+  <testcase name="partialRefundsUpToTheOriginalAmount()" classname="com.instapay.payment.domain.transfer.RefundTest" time="0.001"/>
+  <testcase name="amountMustBePositive()" classname="com.instapay.payment.domain.transfer.RefundTest" time="0.0"/>
+  <testcase name="onlyCompletedInternalTransfersWithinNinetyDays()" classname="com.instapay.payment.domain.transfer.RefundTest" time="0.001"/>
+  <testcase name="fullRefund()" classname="com.instapay.payment.domain.transfer.RefundTest" time="0.0"/>
+  <testcase name="reasonIsBounded()" classname="com.instapay.payment.domain.transfer.RefundTest" time="0.001"/>
+  <testcase name="eventGoesOnTheOriginalTransferTrail()" classname="com.instapay.payment.domain.transfer.RefundTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

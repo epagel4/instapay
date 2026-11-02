@@ -1,0 +1,4 @@
+/Users/epeagel/Documents/Projetos/instapay/messaging-contracts/build/classes/java/main/com/instapay/contracts/SettlementResult.class
+/Users/epeagel/Documents/Projetos/instapay/messaging-contracts/build/classes/java/main/com/instapay/contracts/Topics.class
+/Users/epeagel/Documents/Projetos/instapay/messaging-contracts/build/classes/java/main/com/instapay/contracts/SettlementResult$Status.class
+/Users/epeagel/Documents/Projetos/instapay/messaging-contracts/build/classes/java/main/com/instapay/contracts/SettlementRequest.class

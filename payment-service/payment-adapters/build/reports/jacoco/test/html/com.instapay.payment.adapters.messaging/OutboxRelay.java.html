@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OutboxRelay.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">payment-adapters</a> &gt; <a href="index.source.html" class="el_package">com.instapay.payment.adapters.messaging</a> &gt; <span class="el_source">OutboxRelay.java</span></div><h1>OutboxRelay.java</h1><pre class="source lang-java linenums">package com.instapay.payment.adapters.messaging;
+
+import io.micrometer.tracing.Span;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionTemplate;
+
+/**
+ * Polls unpublished outbox rows and sends them to Kafka (ADR-006). At-least-once: a crash after
+ * sending but before marking re-sends the batch, so consumers must be idempotent. SKIP LOCKED lets
+ * several instances relay in parallel without sending the same row twice concurrently.
+ */
+@Component
+class OutboxRelay {
+
+  private static final int BATCH = 100;
+
+<span class="fc" id="L28">  record Row(UUID id, String topic, String key, String type, String payload, String traceParent) {}</span>
+
+  private final JdbcTemplate jdbc;
+  private final KafkaTemplate&lt;String, String&gt; kafka;
+  private final TransactionTemplate tx;
+  private final OutboxTracing tracing;
+
+  OutboxRelay(
+      JdbcTemplate jdbc,
+      KafkaTemplate&lt;String, String&gt; kafka,
+      TransactionTemplate tx,
+<span class="fc" id="L39">      OutboxTracing tracing) {</span>
+<span class="fc" id="L40">    this.tracing = tracing;</span>
+<span class="fc" id="L41">    this.jdbc = jdbc;</span>
+<span class="fc" id="L42">    this.kafka = kafka;</span>
+<span class="fc" id="L43">    this.tx = tx;</span>
+<span class="fc" id="L44">  }</span>
+
+  @Scheduled(fixedDelayString = &quot;${instapay.outbox.poll-interval-ms}&quot;)
+  void publishPending() {
+<span class="fc" id="L48">    tx.executeWithoutResult(</span>
+        status -&gt; {
+<span class="fc" id="L50">          List&lt;Row&gt; rows =</span>
+<span class="fc" id="L51">              jdbc.query(</span>
+                  &quot;&quot;&quot;
+              SELECT id, topic, message_key, event_type, payload, trace_parent FROM outbox_event
+              WHERE published_at IS NULL ORDER BY created_at LIMIT ? FOR UPDATE SKIP LOCKED
+              &quot;&quot;&quot;,
+                  (rs, i) -&gt;
+<span class="fc" id="L57">                      new Row(</span>
+<span class="fc" id="L58">                          rs.getObject(&quot;id&quot;, UUID.class),</span>
+<span class="fc" id="L59">                          rs.getString(&quot;topic&quot;),</span>
+<span class="fc" id="L60">                          rs.getString(&quot;message_key&quot;),</span>
+<span class="fc" id="L61">                          rs.getString(&quot;event_type&quot;),</span>
+<span class="fc" id="L62">                          rs.getString(&quot;payload&quot;),</span>
+<span class="fc" id="L63">                          rs.getString(&quot;trace_parent&quot;)),</span>
+<span class="fc" id="L64">                  BATCH);</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">          if (rows.isEmpty()) {</span>
+<span class="fc" id="L66">            return;</span>
+          }
+<span class="fc" id="L68">          List&lt;CompletableFuture&lt;SendResult&lt;String, String&gt;&gt;&gt; sends = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">          for (Row row : rows) {</span>
+<span class="fc" id="L70">            ProducerRecord&lt;String, String&gt; record =</span>
+<span class="fc" id="L71">                new ProducerRecord&lt;&gt;(row.topic(), row.key(), row.payload());</span>
+<span class="fc" id="L72">            record.headers().add(&quot;messageId&quot;, row.id().toString().getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L73">            record.headers().add(&quot;eventType&quot;, row.type().getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L74">            Span span = tracing.startPublish(row.traceParent(), row.topic(), record.headers());</span>
+<span class="fc" id="L75">            sends.add(kafka.send(record).whenComplete((r, e) -&gt; end(span, e)));</span>
+<span class="fc" id="L76">          }</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">          for (CompletableFuture&lt;SendResult&lt;String, String&gt;&gt; send : sends) {</span>
+            try {
+<span class="fc" id="L79">              send.get(</span>
+                  10,
+                  TimeUnit.SECONDS); // any failure rolls back: rows stay pending, retried next poll
+<span class="nc" id="L82">            } catch (InterruptedException e) {</span>
+<span class="nc" id="L83">              Thread.currentThread().interrupt();</span>
+<span class="nc" id="L84">              throw new IllegalStateException(e);</span>
+<span class="nc" id="L85">            } catch (Exception e) {</span>
+<span class="nc" id="L86">              throw new IllegalStateException(&quot;Outbox publish failed&quot;, e);</span>
+<span class="fc" id="L87">            }</span>
+<span class="fc" id="L88">          }</span>
+<span class="fc" id="L89">          jdbc.batchUpdate(</span>
+              &quot;UPDATE outbox_event SET published_at = now() WHERE id = ?&quot;,
+<span class="fc" id="L91">              rows.stream().map(r -&gt; new Object[] {r.id()}).toList());</span>
+<span class="fc" id="L92">        });</span>
+<span class="fc" id="L93">  }</span>
+
+  private static void end(Span span, Throwable error) {
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">    if (error != null) {</span>
+<span class="nc" id="L97">      span.error(error);</span>
+    }
+<span class="fc" id="L99">    span.end();</span>
+<span class="fc" id="L100">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

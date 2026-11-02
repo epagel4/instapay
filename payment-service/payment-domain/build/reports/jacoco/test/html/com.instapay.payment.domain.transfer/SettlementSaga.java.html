@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SettlementSaga.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">payment-domain</a> &gt; <a href="index.source.html" class="el_package">com.instapay.payment.domain.transfer</a> &gt; <span class="el_source">SettlementSaga.java</span></div><h1>SettlementSaga.java</h1><pre class="source lang-java linenums">package com.instapay.payment.domain.transfer;
+
+import com.instapay.payment.domain.shared.DomainException;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Objects;
+import java.util.Optional;
+
+/**
+ * Orchestration state of a transfer to another institution (ADR-005).
+ *
+ * &lt;p&gt;The clearing house must not settle after {@code settlementExpiresAt}; we only compensate on
+ * timeout after {@code compensateAfter} (expiry + grace), so a settlement decided in time but
+ * delivered late is still received before we give up.
+ */
+public final class SettlementSaga {
+
+  public static final String TIMEOUT_REASON = &quot;settlement.timeout&quot;;
+
+  private final TransferId transferId;
+  private final Instant startedAt;
+  private final Instant settlementExpiresAt;
+  private final Instant compensateAfter;
+  private SagaState state;
+  private String reason;
+  private Instant finishedAt;
+
+  private SettlementSaga(
+      TransferId transferId,
+      Instant startedAt,
+      Instant settlementExpiresAt,
+      Instant compensateAfter,
+      SagaState state,
+      String reason,
+<span class="fc" id="L35">      Instant finishedAt) {</span>
+<span class="fc" id="L36">    this.transferId = Objects.requireNonNull(transferId, &quot;transferId&quot;);</span>
+<span class="fc" id="L37">    this.startedAt = Objects.requireNonNull(startedAt, &quot;startedAt&quot;);</span>
+<span class="fc" id="L38">    this.settlementExpiresAt = Objects.requireNonNull(settlementExpiresAt, &quot;settlementExpiresAt&quot;);</span>
+<span class="fc" id="L39">    this.compensateAfter = Objects.requireNonNull(compensateAfter, &quot;compensateAfter&quot;);</span>
+<span class="fc" id="L40">    this.state = Objects.requireNonNull(state, &quot;state&quot;);</span>
+<span class="fc" id="L41">    this.reason = reason;</span>
+<span class="fc" id="L42">    this.finishedAt = finishedAt;</span>
+<span class="fc" id="L43">  }</span>
+
+  public static SettlementSaga start(
+      TransferId transferId, Instant now, Duration settlementTimeout, Duration grace) {
+<span class="pc bpc" id="L47" title="1 of 6 branches missed.">    if (settlementTimeout.isNegative() || settlementTimeout.isZero() || grace.isNegative()) {</span>
+<span class="fc" id="L48">      throw new IllegalArgumentException(&quot;Timeout must be positive and grace non-negative&quot;);</span>
+    }
+<span class="fc" id="L50">    Instant expiresAt = now.plus(settlementTimeout);</span>
+<span class="fc" id="L51">    return new SettlementSaga(</span>
+        transferId,
+        now,
+        expiresAt,
+<span class="fc" id="L55">        expiresAt.plus(grace),</span>
+        SagaState.AWAITING_SETTLEMENT,
+        null,
+        null);
+  }
+
+  /** Rehydrates persisted state; no transition rules applied. */
+  public static SettlementSaga restore(
+      TransferId transferId,
+      Instant startedAt,
+      Instant settlementExpiresAt,
+      Instant compensateAfter,
+      SagaState state,
+      String reason,
+      Instant finishedAt) {
+<span class="fc" id="L70">    return new SettlementSaga(</span>
+        transferId, startedAt, settlementExpiresAt, compensateAfter, state, reason, finishedAt);
+  }
+
+  public void settled(Instant now) {
+<span class="fc" id="L75">    requireAwaiting();</span>
+<span class="fc" id="L76">    finish(SagaState.COMPLETED, null, now);</span>
+<span class="fc" id="L77">  }</span>
+
+  public void rejected(String rejectionReason, Instant now) {
+<span class="fc" id="L80">    requireAwaiting();</span>
+<span class="fc bfc" id="L81" title="All 4 branches covered.">    if (rejectionReason == null || rejectionReason.isBlank()) {</span>
+<span class="fc" id="L82">      throw new DomainException(&quot;saga.reason.required&quot;, &quot;Rejection reason is required&quot;);</span>
+    }
+<span class="fc" id="L84">    finish(SagaState.COMPENSATED, rejectionReason, now);</span>
+<span class="fc" id="L85">  }</span>
+
+  public void timedOut(Instant now) {
+<span class="fc" id="L88">    requireAwaiting();</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">    if (now.isBefore(compensateAfter)) {</span>
+<span class="fc" id="L90">      throw new DomainException(</span>
+          &quot;saga.not_overdue&quot;, &quot;Settlement can still arrive until &quot; + compensateAfter);
+    }
+<span class="fc" id="L93">    finish(SagaState.COMPENSATED, TIMEOUT_REASON, now);</span>
+<span class="fc" id="L94">  }</span>
+
+  public boolean isAwaiting() {
+<span class="fc bfc" id="L97" title="All 2 branches covered.">    return state == SagaState.AWAITING_SETTLEMENT;</span>
+  }
+
+  private void requireAwaiting() {
+<span class="fc bfc" id="L101" title="All 2 branches covered.">    if (!isAwaiting()) {</span>
+<span class="fc" id="L102">      throw new DomainException(</span>
+          &quot;saga.already_finished&quot;, &quot;Saga &quot; + transferId + &quot; is already &quot; + state);
+    }
+<span class="fc" id="L105">  }</span>
+
+  private void finish(SagaState newState, String newReason, Instant now) {
+<span class="fc" id="L108">    state = newState;</span>
+<span class="fc" id="L109">    reason = newReason;</span>
+<span class="fc" id="L110">    finishedAt = Objects.requireNonNull(now, &quot;now&quot;);</span>
+<span class="fc" id="L111">  }</span>
+
+  public TransferId transferId() {
+<span class="fc" id="L114">    return transferId;</span>
+  }
+
+  public Instant startedAt() {
+<span class="fc" id="L118">    return startedAt;</span>
+  }
+
+  public Instant settlementExpiresAt() {
+<span class="fc" id="L122">    return settlementExpiresAt;</span>
+  }
+
+  public Instant compensateAfter() {
+<span class="fc" id="L126">    return compensateAfter;</span>
+  }
+
+  public SagaState state() {
+<span class="fc" id="L130">    return state;</span>
+  }
+
+  public Optional&lt;String&gt; reason() {
+<span class="fc" id="L134">    return Optional.ofNullable(reason);</span>
+  }
+
+  public Optional&lt;Instant&gt; finishedAt() {
+<span class="fc" id="L138">    return Optional.ofNullable(finishedAt);</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

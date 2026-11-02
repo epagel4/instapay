@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LimitWindows.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">payment-domain</a> &gt; <a href="index.source.html" class="el_package">com.instapay.payment.domain.limits</a> &gt; <span class="el_source">LimitWindows.java</span></div><h1>LimitWindows.java</h1><pre class="source lang-java linenums">package com.instapay.payment.domain.limits;
+
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.Objects;
+import java.util.Optional;
+
+/**
+ * Time windows a transfer at {@code now} counts against, in the account's local time zone: the
+ * calendar day, and the night window (20:00-06:00, spanning midnight) if {@code now} is inside it.
+ */
+public record LimitWindows(Window day, Optional&lt;Window&gt; night) {
+
+<span class="fc" id="L17">  public static final LocalTime NIGHT_START = LocalTime.of(20, 0);</span>
+<span class="fc" id="L18">  public static final LocalTime NIGHT_END = LocalTime.of(6, 0);</span>
+
+  /** Half-open interval [start, end). */
+<span class="fc" id="L21">  public record Window(Instant start, Instant end) {}</span>
+
+<span class="fc" id="L23">  public LimitWindows {</span>
+<span class="fc" id="L24">    Objects.requireNonNull(day, &quot;day&quot;);</span>
+<span class="fc" id="L25">    Objects.requireNonNull(night, &quot;night&quot;);</span>
+<span class="fc" id="L26">  }</span>
+
+  public static LimitWindows at(Instant now, ZoneId zone) {
+<span class="fc" id="L29">    ZonedDateTime local = now.atZone(zone);</span>
+<span class="fc" id="L30">    LocalDate date = local.toLocalDate();</span>
+<span class="fc" id="L31">    Window day =</span>
+        new Window(
+<span class="fc" id="L33">            date.atStartOfDay(zone).toInstant(), date.plusDays(1).atStartOfDay(zone).toInstant());</span>
+
+<span class="fc" id="L35">    LocalTime time = local.toLocalTime();</span>
+    Optional&lt;LocalDate&gt; nightStartDate =
+<span class="fc bfc" id="L37" title="All 2 branches covered.">        !time.isBefore(NIGHT_START)</span>
+<span class="fc" id="L38">            ? Optional.of(date)</span>
+<span class="fc bfc" id="L39" title="All 2 branches covered.">            : time.isBefore(NIGHT_END) ? Optional.of(date.minusDays(1)) : Optional.empty();</span>
+<span class="fc" id="L40">    Optional&lt;Window&gt; night =</span>
+<span class="fc" id="L41">        nightStartDate.map(</span>
+            d -&gt;
+<span class="fc" id="L43">                new Window(</span>
+<span class="fc" id="L44">                    d.atTime(NIGHT_START).atZone(zone).toInstant(),</span>
+<span class="fc" id="L45">                    d.plusDays(1).atTime(NIGHT_END).atZone(zone).toInstant()));</span>
+<span class="fc" id="L46">    return new LimitWindows(day, night);</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -1,0 +1,2 @@
+/Users/epeagel/Documents/Projetos/instapay/settlement-service/settlement-application/build/classes/java/main/com/instapay/settlement/application/SettleService.class
+/Users/epeagel/Documents/Projetos/instapay/settlement-service/settlement-application/build/classes/java/main/com/instapay/settlement/application/port/out/SettlementRepository.class

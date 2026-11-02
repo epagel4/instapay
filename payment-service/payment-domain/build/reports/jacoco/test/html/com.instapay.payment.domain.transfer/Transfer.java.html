@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Transfer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">payment-domain</a> &gt; <a href="index.source.html" class="el_package">com.instapay.payment.domain.transfer</a> &gt; <span class="el_source">Transfer.java</span></div><h1>Transfer.java</h1><pre class="source lang-java linenums">package com.instapay.payment.domain.transfer;
+
+import com.instapay.payment.domain.account.AccountRef;
+import com.instapay.payment.domain.shared.DomainException;
+import com.instapay.payment.domain.shared.Money;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Objects;
+import java.util.Optional;
+
+/**
+ * A transfer between two accounts. PENDING is the only non-terminal state; time always comes from
+ * the caller (an injected Clock), never from the system clock.
+ */
+public final class Transfer {
+
+  /** Pix allows returning a payment up to 90 days after it was made. */
+<span class="fc" id="L18">  public static final Duration REFUND_WINDOW = Duration.ofDays(90);</span>
+
+  private final TransferId id;
+  private final AccountRef debtor;
+  private final AccountRef creditor;
+  private final Money amount;
+  private final Instant createdAt;
+  private TransferStatus status;
+  private Instant finishedAt;
+  private String failureReason;
+
+  private Transfer(
+      TransferId id,
+      AccountRef debtor,
+      AccountRef creditor,
+      Money amount,
+      Instant createdAt,
+      TransferStatus status,
+      Instant finishedAt,
+<span class="fc" id="L37">      String failureReason) {</span>
+<span class="fc" id="L38">    this.id = Objects.requireNonNull(id, &quot;id&quot;);</span>
+<span class="fc" id="L39">    this.debtor = Objects.requireNonNull(debtor, &quot;debtor&quot;);</span>
+<span class="fc" id="L40">    this.creditor = Objects.requireNonNull(creditor, &quot;creditor&quot;);</span>
+<span class="fc" id="L41">    this.amount = Objects.requireNonNull(amount, &quot;amount&quot;);</span>
+<span class="fc" id="L42">    this.createdAt = Objects.requireNonNull(createdAt, &quot;createdAt&quot;);</span>
+<span class="fc" id="L43">    this.status = Objects.requireNonNull(status, &quot;status&quot;);</span>
+<span class="fc" id="L44">    this.finishedAt = finishedAt;</span>
+<span class="fc" id="L45">    this.failureReason = failureReason;</span>
+<span class="fc" id="L46">  }</span>
+
+  public static Transfer request(
+      TransferId id, AccountRef debtor, AccountRef creditor, Money amount, Instant now) {
+<span class="fc bfc" id="L50" title="All 2 branches covered.">    if (!amount.isPositive()) {</span>
+<span class="fc" id="L51">      throw new DomainException(&quot;transfer.amount.not_positive&quot;, &quot;Transfer amount must be positive&quot;);</span>
+    }
+<span class="fc bfc" id="L53" title="All 2 branches covered.">    if (debtor.equals(creditor)) {</span>
+<span class="fc" id="L54">      throw new DomainException(&quot;transfer.same_account&quot;, &quot;Debtor and creditor must differ&quot;);</span>
+    }
+<span class="fc" id="L56">    return new Transfer(id, debtor, creditor, amount, now, TransferStatus.PENDING, null, null);</span>
+  }
+
+  /** Rehydrates persisted state; no transition rules applied. */
+  public static Transfer restore(
+      TransferId id,
+      AccountRef debtor,
+      AccountRef creditor,
+      Money amount,
+      Instant createdAt,
+      TransferStatus status,
+      Instant finishedAt,
+      String failureReason) {
+<span class="fc" id="L69">    return new Transfer(id, debtor, creditor, amount, createdAt, status, finishedAt, failureReason);</span>
+  }
+
+  public void complete(Instant now) {
+<span class="fc" id="L73">    requirePending();</span>
+<span class="fc" id="L74">    status = TransferStatus.COMPLETED;</span>
+<span class="fc" id="L75">    finishedAt = Objects.requireNonNull(now, &quot;now&quot;);</span>
+<span class="fc" id="L76">  }</span>
+
+  public void fail(String reason, Instant now) {
+<span class="fc bfc" id="L79" title="All 4 branches covered.">    if (reason == null || reason.isBlank()) {</span>
+<span class="fc" id="L80">      throw new DomainException(&quot;transfer.failure_reason.required&quot;, &quot;Failure reason is required&quot;);</span>
+    }
+<span class="fc" id="L82">    requirePending();</span>
+<span class="fc" id="L83">    status = TransferStatus.FAILED;</span>
+<span class="fc" id="L84">    failureReason = reason;</span>
+<span class="fc" id="L85">    finishedAt = Objects.requireNonNull(now, &quot;now&quot;);</span>
+<span class="fc" id="L86">  }</span>
+
+  /**
+   * Returns {@code amount} (total or partial) of this transfer from creditor to debtor.
+   *
+   * @param alreadyRefunded sum of previous refunds of this transfer, read under a lock on it
+   */
+  public Refund refund(
+      RefundId refundId, Money refundAmount, Money alreadyRefunded, String reason, Instant now) {
+<span class="fc bfc" id="L95" title="All 2 branches covered.">    if (!isInternal()) {</span>
+<span class="fc" id="L96">      throw new DomainException(</span>
+          &quot;refund.external_not_supported&quot;,
+          &quot;Transfers to other institutions are refunded by the receiving bank&quot;);
+    }
+<span class="fc bfc" id="L100" title="All 2 branches covered.">    if (status != TransferStatus.COMPLETED) {</span>
+<span class="fc" id="L101">      throw new DomainException(</span>
+          &quot;refund.transfer_not_completed&quot;, &quot;Only completed transfers can be refunded&quot;);
+    }
+<span class="fc bfc" id="L104" title="All 2 branches covered.">    if (!refundAmount.isPositive()) {</span>
+<span class="fc" id="L105">      throw new DomainException(&quot;refund.amount.not_positive&quot;, &quot;Refund amount must be positive&quot;);</span>
+    }
+<span class="fc bfc" id="L107" title="All 2 branches covered.">    if (alreadyRefunded.plus(refundAmount).isGreaterThan(amount)) {</span>
+<span class="fc" id="L108">      throw new DomainException(</span>
+          &quot;refund.exceeds_original&quot;,
+<span class="fc" id="L110">          &quot;Refunds would exceed the original amount (&quot; + amount.minus(alreadyRefunded) + &quot; left)&quot;);</span>
+    }
+<span class="fc bfc" id="L112" title="All 2 branches covered.">    if (now.isAfter(finishedAt.plus(REFUND_WINDOW))) {</span>
+<span class="fc" id="L113">      throw new DomainException(&quot;refund.window_expired&quot;, &quot;Refund window of 90 days has passed&quot;);</span>
+    }
+<span class="fc" id="L115">    return new Refund(refundId, id, refundAmount, reason, now);</span>
+  }
+
+  /** Both accounts held by the same institution: settled locally, no saga needed. */
+  public boolean isInternal() {
+<span class="fc" id="L120">    return debtor.institution().equals(creditor.institution());</span>
+  }
+
+  private void requirePending() {
+<span class="fc bfc" id="L124" title="All 2 branches covered.">    if (status != TransferStatus.PENDING) {</span>
+<span class="fc" id="L125">      throw new DomainException(</span>
+          &quot;transfer.transition.invalid&quot;, &quot;Transfer &quot; + id + &quot; is already &quot; + status);
+    }
+<span class="fc" id="L128">  }</span>
+
+  public TransferId id() {
+<span class="fc" id="L131">    return id;</span>
+  }
+
+  public AccountRef debtor() {
+<span class="fc" id="L135">    return debtor;</span>
+  }
+
+  public AccountRef creditor() {
+<span class="fc" id="L139">    return creditor;</span>
+  }
+
+  public Money amount() {
+<span class="fc" id="L143">    return amount;</span>
+  }
+
+  public Instant createdAt() {
+<span class="fc" id="L147">    return createdAt;</span>
+  }
+
+  public TransferStatus status() {
+<span class="fc" id="L151">    return status;</span>
+  }
+
+  public Optional&lt;Instant&gt; finishedAt() {
+<span class="fc" id="L155">    return Optional.ofNullable(finishedAt);</span>
+  }
+
+  public Optional&lt;String&gt; failureReason() {
+<span class="fc" id="L159">    return Optional.ofNullable(failureReason);</span>
+  }
+
+  @Override
+  public boolean equals(Object o) {
+<span class="pc bpc" id="L164" title="1 of 4 branches missed.">    return o instanceof Transfer other &amp;&amp; id.equals(other.id);</span>
+  }
+
+  @Override
+  public int hashCode() {
+<span class="fc" id="L169">    return id.hashCode();</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

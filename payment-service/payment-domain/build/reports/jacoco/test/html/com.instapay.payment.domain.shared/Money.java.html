@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Money.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">payment-domain</a> &gt; <a href="index.source.html" class="el_package">com.instapay.payment.domain.shared</a> &gt; <span class="el_source">Money.java</span></div><h1>Money.java</h1><pre class="source lang-java linenums">package com.instapay.payment.domain.shared;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.Objects;
+
+/**
+ * Amount in BRL, stored as an exact number of cents (see ADR-004). May be negative so that ledger
+ * entries can be signed; operations that require positive amounts validate it themselves.
+ */
+<span class="fc" id="L11">public record Money(long cents) implements Comparable&lt;Money&gt; {</span>
+
+<span class="fc" id="L13">  public static final Money ZERO = new Money(0);</span>
+  private static final int SCALE = 2;
+
+  public static Money ofCents(long cents) {
+<span class="fc" id="L17">    return new Money(cents);</span>
+  }
+
+  /** Exact conversion: rejects amounts with more than two decimal places. */
+  public static Money of(String amount) {
+    try {
+<span class="fc" id="L23">      return of(new BigDecimal(amount));</span>
+<span class="fc" id="L24">    } catch (NumberFormatException e) {</span>
+<span class="fc" id="L25">      throw new DomainException(&quot;money.invalid&quot;, &quot;Not a decimal amount: &quot; + amount);</span>
+    }
+  }
+
+  /** Exact conversion: rejects amounts with more than two decimal places. */
+  public static Money of(BigDecimal amount) {
+<span class="fc" id="L31">    return of(amount, RoundingMode.UNNECESSARY);</span>
+  }
+
+  /** Conversion with an explicit rounding decision for amounts with more than two decimals. */
+  public static Money of(BigDecimal amount, RoundingMode rounding) {
+<span class="fc" id="L36">    Objects.requireNonNull(amount, &quot;amount&quot;);</span>
+<span class="fc" id="L37">    Objects.requireNonNull(rounding, &quot;rounding&quot;);</span>
+    try {
+<span class="fc" id="L39">      return new Money(amount.setScale(SCALE, rounding).unscaledValue().longValueExact());</span>
+<span class="fc" id="L40">    } catch (ArithmeticException e) {</span>
+<span class="fc" id="L41">      throw new DomainException(</span>
+<span class="fc" id="L42">          &quot;money.invalid&quot;, &quot;Amount needs rounding or is out of range: &quot; + amount.toPlainString());</span>
+    }
+  }
+
+  public Money plus(Money other) {
+<span class="fc" id="L47">    return exact(() -&gt; Math.addExact(cents, other.cents));</span>
+  }
+
+  public Money minus(Money other) {
+<span class="fc" id="L51">    return exact(() -&gt; Math.subtractExact(cents, other.cents));</span>
+  }
+
+  public Money negate() {
+<span class="fc" id="L55">    return exact(() -&gt; Math.negateExact(cents));</span>
+  }
+
+  public boolean isPositive() {
+<span class="fc bfc" id="L59" title="All 2 branches covered.">    return cents &gt; 0;</span>
+  }
+
+  public boolean isNegative() {
+<span class="fc bfc" id="L63" title="All 2 branches covered.">    return cents &lt; 0;</span>
+  }
+
+  public boolean isZero() {
+<span class="fc bfc" id="L67" title="All 2 branches covered.">    return cents == 0;</span>
+  }
+
+  public boolean isGreaterThan(Money other) {
+<span class="fc bfc" id="L71" title="All 2 branches covered.">    return compareTo(other) &gt; 0;</span>
+  }
+
+  public BigDecimal toBigDecimal() {
+<span class="fc" id="L75">    return BigDecimal.valueOf(cents, SCALE);</span>
+  }
+
+  @Override
+  public int compareTo(Money other) {
+<span class="fc" id="L80">    return Long.compare(cents, other.cents);</span>
+  }
+
+  @Override
+  public String toString() {
+<span class="fc" id="L85">    return toBigDecimal().toPlainString();</span>
+  }
+
+  private static Money exact(java.util.function.LongSupplier operation) {
+    try {
+<span class="fc" id="L90">      return new Money(operation.getAsLong());</span>
+<span class="fc" id="L91">    } catch (ArithmeticException e) {</span>
+<span class="fc" id="L92">      throw new DomainException(&quot;money.overflow&quot;, &quot;Monetary overflow&quot;);</span>
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

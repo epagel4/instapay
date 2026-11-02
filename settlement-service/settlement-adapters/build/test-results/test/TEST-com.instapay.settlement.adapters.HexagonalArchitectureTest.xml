@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.instapay.settlement.adapters.HexagonalArchitectureTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-11-02T16:09:43.024Z" hostname="MacBook-Pro-de-Eduardo.local" time="3.158">
+  <properties/>
+  <testcase name="layers_respect_hexagonal_dependencies" classname="com.instapay.settlement.adapters.HexagonalArchitectureTest" time="3.104"/>
+  <testcase name="core_is_framework_free" classname="com.instapay.settlement.adapters.HexagonalArchitectureTest" time="0.002"/>
+  <testcase name="web_does_not_touch_persistence" classname="com.instapay.settlement.adapters.HexagonalArchitectureTest" time="0.0"/>
+  <testcase name="domain_never_uses_floating_point_money" classname="com.instapay.settlement.adapters.HexagonalArchitectureTest" time="0.002"/>
+  <testcase name="core_reads_time_only_from_injected_clock" classname="com.instapay.settlement.adapters.HexagonalArchitectureTest" time="0.049"/>
+  <system-out><![CDATA[13:09:43.082 [Test worker] INFO com.tngtech.archunit.core.PluginLoader -- Detected Java version 21.0.13
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

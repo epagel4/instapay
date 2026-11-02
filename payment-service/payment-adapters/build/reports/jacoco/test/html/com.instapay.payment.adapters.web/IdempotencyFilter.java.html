@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IdempotencyFilter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">payment-adapters</a> &gt; <a href="index.source.html" class="el_package">com.instapay.payment.adapters.web</a> &gt; <span class="el_source">IdempotencyFilter.java</span></div><h1>IdempotencyFilter.java</h1><pre class="source lang-java linenums">package com.instapay.payment.adapters.web;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.instapay.payment.application.port.out.IdempotencyStore;
+import com.instapay.payment.application.port.out.IdempotencyStore.StoredResponse;
+import com.instapay.payment.application.port.out.TransactionRunner;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
+import java.util.Optional;
+import java.util.Set;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.ContentCachingResponseWrapper;
+
+/**
+ * Enforces Idempotency-Key on every write under /api/v1 (ADR-003).
+ *
+ * &lt;p&gt;The key claim, the business effect and the stored response commit in one transaction: either
+ * the operation happened and its response is stored, or neither. Concurrent requests with the same
+ * key serialize on the key's primary key and the later ones replay the first response.
+ */
+@Component
+class IdempotencyFilter extends OncePerRequestFilter {
+
+  static final String HEADER = &quot;Idempotency-Key&quot;;
+  static final String REPLAYED_HEADER = &quot;Idempotent-Replayed&quot;;
+  private static final int MAX_KEY_LENGTH = 100;
+  private static final int MAX_BODY_BYTES = 64 * 1024;
+<span class="fc" id="L38">  private static final Set&lt;String&gt; WRITE_METHODS = Set.of(&quot;POST&quot;, &quot;PUT&quot;, &quot;PATCH&quot;, &quot;DELETE&quot;);</span>
+
+  private final IdempotencyStore store;
+  private final TransactionRunner tx;
+  private final ObjectMapper json;
+
+<span class="fc" id="L44">  IdempotencyFilter(IdempotencyStore store, TransactionRunner tx, ObjectMapper json) {</span>
+<span class="fc" id="L45">    this.store = store;</span>
+<span class="fc" id="L46">    this.tx = tx;</span>
+<span class="fc" id="L47">    this.json = json;</span>
+<span class="fc" id="L48">  }</span>
+
+  @Override
+  protected boolean shouldNotFilter(HttpServletRequest request) {
+<span class="fc bfc" id="L52" title="All 2 branches covered.">    return !WRITE_METHODS.contains(request.getMethod())</span>
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">        || !request.getRequestURI().startsWith(&quot;/api/v1/&quot;);</span>
+  }
+
+  @Override
+  protected void doFilterInternal(
+      HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+      throws IOException {
+<span class="fc" id="L60">    String key = request.getHeader(HEADER);</span>
+<span class="pc bpc" id="L61" title="2 of 6 branches missed.">    if (key == null || key.isBlank() || key.length() &gt; MAX_KEY_LENGTH) {</span>
+<span class="fc" id="L62">      problem(</span>
+          response,
+          HttpStatus.BAD_REQUEST,
+          &quot;idempotency.key_missing&quot;,
+          HEADER + &quot; header (1-&quot; + MAX_KEY_LENGTH + &quot; chars) is required for write operations&quot;);
+<span class="fc" id="L67">      return;</span>
+    }
+<span class="fc" id="L69">    byte[] body = request.getInputStream().readNBytes(MAX_BODY_BYTES + 1);</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">    if (body.length &gt; MAX_BODY_BYTES) {</span>
+<span class="nc" id="L71">      problem(</span>
+          response, HttpStatus.PAYLOAD_TOO_LARGE, &quot;request.too_large&quot;, &quot;Request body too large&quot;);
+<span class="nc" id="L73">      return;</span>
+    }
+<span class="fc" id="L75">    String fingerprint = fingerprint(request, body);</span>
+
+<span class="fc" id="L77">    Optional&lt;StoredResponse&gt; cached = store.findCached(key);</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">    if (cached.isPresent()) {</span>
+<span class="fc" id="L79">      replay(cached.get(), fingerprint, response);</span>
+<span class="fc" id="L80">      return;</span>
+    }
+
+<span class="fc" id="L83">    ContentCachingResponseWrapper captured = new ContentCachingResponseWrapper(response);</span>
+    Outcome outcome;
+    try {
+<span class="fc" id="L86">      outcome =</span>
+<span class="fc" id="L87">          tx.inTransaction(</span>
+              () -&gt; {
+<span class="fc" id="L89">                Optional&lt;StoredResponse&gt; previous = store.claim(key, fingerprint);</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">                if (previous.isPresent()) {</span>
+<span class="fc" id="L91">                  return new Outcome(previous.get(), true);</span>
+                }
+<span class="fc" id="L93">                proceed(chain, new CachedBodyRequest(request, body), captured);</span>
+<span class="fc" id="L94">                StoredResponse produced = snapshot(fingerprint, captured);</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">                if (isTransient(produced.status())) {</span>
+<span class="fc" id="L96">                  throw new TransientOutcome(); // roll back: the client may retry with this key</span>
+                }
+<span class="fc" id="L98">                store.complete(key, produced);</span>
+<span class="fc" id="L99">                return new Outcome(produced, false);</span>
+              });
+<span class="fc" id="L101">    } catch (TransientOutcome e) {</span>
+<span class="fc" id="L102">      captured.copyBodyToResponse();</span>
+<span class="fc" id="L103">      return;</span>
+<span class="fc" id="L104">    }</span>
+
+<span class="fc bfc" id="L106" title="All 2 branches covered.">    if (outcome.replayed()) {</span>
+<span class="fc" id="L107">      replay(outcome.response(), fingerprint, response);</span>
+    } else {
+<span class="fc" id="L109">      captured.copyBodyToResponse(); // only after COMMIT: never an uncommitted success</span>
+    }
+    // The client has its answer; the best-effort cache write stays off the latency path.
+<span class="fc" id="L112">    response.flushBuffer();</span>
+<span class="fc" id="L113">    store.cache(key, outcome.response()); // also re-warms the cache after a Postgres replay</span>
+<span class="fc" id="L114">  }</span>
+
+<span class="fc" id="L116">  private record Outcome(StoredResponse response, boolean replayed) {}</span>
+
+  private void replay(StoredResponse stored, String fingerprint, HttpServletResponse response)
+      throws IOException {
+<span class="fc bfc" id="L120" title="All 2 branches covered.">    if (!stored.fingerprint().equals(fingerprint)) {</span>
+<span class="fc" id="L121">      problem(</span>
+          response,
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          &quot;idempotency.key_reused&quot;,
+          HEADER + &quot; was already used with a different request&quot;);
+<span class="fc" id="L126">      return;</span>
+    }
+<span class="fc" id="L128">    response.setStatus(stored.status());</span>
+<span class="pc bpc" id="L129" title="1 of 4 branches missed.">    if (stored.contentType() != null &amp;&amp; !stored.contentType().isEmpty()) {</span>
+<span class="fc" id="L130">      response.setContentType(stored.contentType());</span>
+    }
+<span class="fc" id="L132">    response.setHeader(REPLAYED_HEADER, &quot;true&quot;);</span>
+<span class="fc" id="L133">    response.getOutputStream().write(stored.body().getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L134">  }</span>
+
+  private static void proceed(
+      FilterChain chain, HttpServletRequest request, HttpServletResponse response) {
+    try {
+<span class="fc" id="L139">      chain.doFilter(request, response);</span>
+<span class="nc" id="L140">    } catch (IOException | ServletException e) {</span>
+<span class="nc" id="L141">      throw new IllegalStateException(e);</span>
+<span class="fc" id="L142">    }</span>
+<span class="fc" id="L143">  }</span>
+
+  private static StoredResponse snapshot(String fingerprint, ContentCachingResponseWrapper r) {
+<span class="fc" id="L146">    return new StoredResponse(</span>
+        fingerprint,
+<span class="fc" id="L148">        r.getStatus(),</span>
+<span class="fc" id="L149">        r.getContentType(),</span>
+<span class="fc" id="L150">        new String(r.getContentAsByteArray(), StandardCharsets.UTF_8));</span>
+  }
+
+  /** Not stored, so a retry with the same key re-executes: conflicts, throttling, server errors. */
+  static boolean isTransient(int status) {
+<span class="pc bpc" id="L155" title="2 of 6 branches missed.">    return status == 409 || status == 429 || status &gt;= 500;</span>
+  }
+
+  private void problem(HttpServletResponse response, HttpStatus status, String code, String detail)
+      throws IOException {
+<span class="fc" id="L160">    response.setStatus(status.value());</span>
+<span class="fc" id="L161">    response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);</span>
+<span class="fc" id="L162">    json.writeValue(response.getOutputStream(), Problems.of(status, code, detail));</span>
+<span class="fc" id="L163">  }</span>
+
+  private static String fingerprint(HttpServletRequest request, byte[] body) {
+    try {
+<span class="fc" id="L167">      MessageDigest sha = MessageDigest.getInstance(&quot;SHA-256&quot;);</span>
+<span class="fc" id="L168">      sha.update(</span>
+<span class="fc" id="L169">          (request.getMethod() + &quot; &quot; + request.getRequestURI() + &quot;\n&quot;)</span>
+<span class="fc" id="L170">              .getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L171">      return HexFormat.of().formatHex(sha.digest(body));</span>
+<span class="nc" id="L172">    } catch (NoSuchAlgorithmException e) {</span>
+<span class="nc" id="L173">      throw new IllegalStateException(e);</span>
+    }
+  }
+
+  private static final class TransientOutcome extends RuntimeException {
+    TransientOutcome() {
+<span class="fc" id="L179">      super(null, null, false, false);</span>
+<span class="fc" id="L180">    }</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

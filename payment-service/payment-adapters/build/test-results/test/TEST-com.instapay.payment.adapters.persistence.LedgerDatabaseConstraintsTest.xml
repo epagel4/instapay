@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.instapay.payment.adapters.persistence.LedgerDatabaseConstraintsTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-02T16:09:32.192Z" hostname="MacBook-Pro-de-Eduardo.local" time="0.213">
+  <properties/>
+  <testcase name="appendsEntriesAndDerivesBalances()" classname="com.instapay.payment.adapters.persistence.LedgerDatabaseConstraintsTest" time="0.055"/>
+  <testcase name="rejectsZeroAmountPosting()" classname="com.instapay.payment.adapters.persistence.LedgerDatabaseConstraintsTest" time="0.009"/>
+  <testcase name="rejectsEntryWithSinglePostingOrNone()" classname="com.instapay.payment.adapters.persistence.LedgerDatabaseConstraintsTest" time="0.04"/>
+  <testcase name="rejectsUnbalancedEntryAtCommit()" classname="com.instapay.payment.adapters.persistence.LedgerDatabaseConstraintsTest" time="0.023"/>
+  <testcase name="ledgerIsAppendOnly()" classname="com.instapay.payment.adapters.persistence.LedgerDatabaseConstraintsTest" time="0.063"/>
+  <testcase name="appendOutsideTransactionPersistsNothing()" classname="com.instapay.payment.adapters.persistence.LedgerDatabaseConstraintsTest" time="0.02"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

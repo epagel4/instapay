@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JdbcLedgerRepository.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">payment-adapters</a> &gt; <a href="index.source.html" class="el_package">com.instapay.payment.adapters.persistence</a> &gt; <span class="el_source">JdbcLedgerRepository.java</span></div><h1>JdbcLedgerRepository.java</h1><pre class="source lang-java linenums">package com.instapay.payment.adapters.persistence;
+
+import com.instapay.payment.application.port.out.LedgerRepository;
+import com.instapay.payment.domain.account.AccountId;
+import com.instapay.payment.domain.ledger.JournalEntry;
+import com.instapay.payment.domain.ledger.Posting;
+import com.instapay.payment.domain.shared.Money;
+import java.sql.Timestamp;
+import java.util.List;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
+@Repository
+public class JdbcLedgerRepository implements LedgerRepository {
+
+  private final JdbcTemplate jdbc;
+
+<span class="fc" id="L19">  public JdbcLedgerRepository(JdbcTemplate jdbc) {</span>
+<span class="fc" id="L20">    this.jdbc = jdbc;</span>
+<span class="fc" id="L21">  }</span>
+
+  @Override
+  @Transactional
+  public void append(JournalEntry entry) {
+<span class="fc" id="L26">    jdbc.update(</span>
+        &quot;INSERT INTO journal_entry (id, type, reference, occurred_at) VALUES (?, ?, ?, ?)&quot;,
+<span class="fc" id="L28">        entry.id().value(),</span>
+<span class="fc" id="L29">        entry.type().name(),</span>
+<span class="fc" id="L30">        entry.reference(),</span>
+<span class="fc" id="L31">        Timestamp.from(entry.occurredAt()));</span>
+<span class="fc" id="L32">    List&lt;Object[]&gt; rows = entry.postings().stream().map(p -&gt; row(entry, p)).toList();</span>
+<span class="fc" id="L33">    jdbc.batchUpdate(</span>
+        &quot;INSERT INTO posting (journal_entry_id, account_id, amount_cents) VALUES (?, ?, ?)&quot;, rows);
+<span class="fc" id="L35">  }</span>
+
+  @Override
+  public Money balanceOf(AccountId account) {
+<span class="fc" id="L39">    Long cents =</span>
+<span class="fc" id="L40">        jdbc.queryForObject(</span>
+            &quot;SELECT coalesce(sum(amount_cents), 0)::bigint FROM posting WHERE account_id = ?&quot;,
+            Long.class,
+<span class="fc" id="L43">            account.value());</span>
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">    return Money.ofCents(cents == null ? 0 : cents);</span>
+  }
+
+  private static Object[] row(JournalEntry entry, Posting posting) {
+<span class="fc" id="L48">    return new Object[] {entry.id().value(), posting.account().value(), posting.amount().cents()};</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

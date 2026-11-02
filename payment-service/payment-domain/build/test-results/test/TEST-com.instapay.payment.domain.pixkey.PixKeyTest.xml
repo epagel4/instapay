@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.instapay.payment.domain.pixkey.PixKeyTest" tests="23" skipped="0" failures="0" errors="0" timestamp="2026-11-02T16:09:38.754Z" hostname="MacBook-Pro-de-Eduardo.local" time="0.02">
+  <properties/>
+  <testcase name="toStringMasksPersonalData()" classname="com.instapay.payment.domain.pixkey.PixKeyTest" time="0.001"/>
+  <testcase name="generatesRandomKeys()" classname="com.instapay.payment.domain.pixkey.PixKeyTest" time="0.0"/>
+  <testcase name="CPF &quot;529.982.247-25&quot; -&gt; 52998224725" classname="com.instapay.payment.domain.pixkey.PixKeyTest" time="0.005"/>
+  <testcase name="CPF &quot;52998224725&quot; -&gt; 52998224725" classname="com.instapay.payment.domain.pixkey.PixKeyTest" time="0.0"/>
+  <testcase name="EMAIL &quot; Maria.Silva+pix@Example.COM.br &quot; -&gt; maria.silva+pix@example.com.br" classname="com.instapay.payment.domain.pixkey.PixKeyTest" time="0.0"/>
+  <testcase name="PHONE &quot;+5511987654321&quot; -&gt; +5511987654321" classname="com.instapay.payment.domain.pixkey.PixKeyTest" time="0.0"/>
+  <testcase name="PHONE &quot;+55 (11) 98765-4321&quot; -&gt; +5511987654321" classname="com.instapay.payment.domain.pixkey.PixKeyTest" time="0.001"/>
+  <testcase name="PHONE &quot;+14155552671&quot; -&gt; +14155552671" classname="com.instapay.payment.domain.pixkey.PixKeyTest" time="0.0"/>
+  <testcase name="RANDOM &quot;123E4567-E89B-42D3-A456-426614174000&quot; -&gt; 123e4567-e89b-42d3-a456-426614174000" classname="com.instapay.payment.domain.pixkey.PixKeyTest" time="0.0"/>
+  <testcase name="rejectsEmailLongerThanDictLimit()" classname="com.instapay.payment.domain.pixkey.PixKeyTest" time="0.0"/>
+  <testcase name="CPF &quot;529.982.247-24&quot; is invalid" classname="com.instapay.payment.domain.pixkey.PixKeyTest" time="0.0"/>
+  <testcase name="EMAIL &quot;maria&quot; is invalid" classname="com.instapay.payment.domain.pixkey.PixKeyTest" time="0.0"/>
+  <testcase name="EMAIL &quot;maria@&quot; is invalid" classname="com.instapay.payment.domain.pixkey.PixKeyTest" time="0.0"/>
+  <testcase name="EMAIL &quot;@example.com&quot; is invalid" classname="com.instapay.payment.domain.pixkey.PixKeyTest" time="0.0"/>
+  <testcase name="EMAIL &quot;maria@example&quot; is invalid" classname="com.instapay.payment.domain.pixkey.PixKeyTest" time="0.0"/>
+  <testcase name="EMAIL &quot;maria silva@example.com&quot; is invalid" classname="com.instapay.payment.domain.pixkey.PixKeyTest" time="0.0"/>
+  <testcase name="PHONE &quot;5511987654321&quot; is invalid" classname="com.instapay.payment.domain.pixkey.PixKeyTest" time="0.0"/>
+  <testcase name="PHONE &quot;+0511987654321&quot; is invalid" classname="com.instapay.payment.domain.pixkey.PixKeyTest" time="0.0"/>
+  <testcase name="PHONE &quot;+5511987654321234&quot; is invalid" classname="com.instapay.payment.domain.pixkey.PixKeyTest" time="0.001"/>
+  <testcase name="PHONE &quot;+5511abc&quot; is invalid" classname="com.instapay.payment.domain.pixkey.PixKeyTest" time="0.0"/>
+  <testcase name="RANDOM &quot;not-a-uuid&quot; is invalid" classname="com.instapay.payment.domain.pixkey.PixKeyTest" time="0.001"/>
+  <testcase name="RANDOM &quot;1-1-1-1-1&quot; is invalid" classname="com.instapay.payment.domain.pixkey.PixKeyTest" time="0.0"/>
+  <testcase name="sameKeyInDifferentFormatsIsEqual()" classname="com.instapay.payment.domain.pixkey.PixKeyTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

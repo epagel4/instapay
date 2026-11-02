@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.instapay.payment.domain.limits.LimitWindowsTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-11-02T16:09:38.703Z" hostname="MacBook-Pro-de-Eduardo.local" time="0.026">
+  <properties/>
+  <testcase name="usesLocalTimeNotUtc()" classname="com.instapay.payment.domain.limits.LimitWindowsTest" time="0.002"/>
+  <testcase name="[1] localNow=2026-11-04T00:00:00, expectedDayStartLocal=2026-11-04T00:00:00" classname="com.instapay.payment.domain.limits.LimitWindowsTest" time="0.001"/>
+  <testcase name="[2] localNow=2026-11-04T23:59:59, expectedDayStartLocal=2026-11-04T00:00:00" classname="com.instapay.payment.domain.limits.LimitWindowsTest" time="0.001"/>
+  <testcase name="[3] localNow=2026-11-05T01:00:00, expectedDayStartLocal=2026-11-05T00:00:00" classname="com.instapay.payment.domain.limits.LimitWindowsTest" time="0.0"/>
+  <testcase name="2026-11-04T10:00:00 local -&gt; night window null" classname="com.instapay.payment.domain.limits.LimitWindowsTest" time="0.0"/>
+  <testcase name="2026-11-04T19:59:59 local -&gt; night window null" classname="com.instapay.payment.domain.limits.LimitWindowsTest" time="0.001"/>
+  <testcase name="2026-11-04T20:00:00 local -&gt; night window 2026-11-04T20:00:00" classname="com.instapay.payment.domain.limits.LimitWindowsTest" time="0.0"/>
+  <testcase name="2026-11-04T23:59:59 local -&gt; night window 2026-11-04T20:00:00" classname="com.instapay.payment.domain.limits.LimitWindowsTest" time="0.0"/>
+  <testcase name="2026-11-05T00:00:00 local -&gt; night window 2026-11-04T20:00:00" classname="com.instapay.payment.domain.limits.LimitWindowsTest" time="0.001"/>
+  <testcase name="2026-11-05T05:59:59 local -&gt; night window 2026-11-04T20:00:00" classname="com.instapay.payment.domain.limits.LimitWindowsTest" time="0.0"/>
+  <testcase name="2026-11-05T06:00:00 local -&gt; night window null" classname="com.instapay.payment.domain.limits.LimitWindowsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

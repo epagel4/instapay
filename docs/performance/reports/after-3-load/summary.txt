@@ -1,0 +1,21 @@
+load average at end: 5,88 9,81 39,84
+---- Global Information -------------------------------------------------------------|---Total---|-----OK----|----KO----
+> request count                                                                      |    67,650 |    67,650 |         -
+> min response time (ms)                                                             |         1 |         1 |         -
+> max response time (ms)                                                             |       455 |       455 |         -
+> mean response time (ms)                                                            |         7 |         7 |         -
+> response time std deviation (ms)                                                   |        24 |        24 |         -
+> response time 50th percentile (ms)                                                 |         3 |         3 |         -
+> response time 75th percentile (ms)                                                 |         4 |         4 |         -
+> response time 95th percentile (ms)                                                 |        16 |        16 |         -
+> response time 99th percentile (ms)                                                 |       153 |       153 |         -
+> mean throughput (rps)                                                              |    448.01 |    448.01 |         -
+---- Response Time Distribution ----------------------------------------------------------------------------------------
+> OK: t < 800 ms                                                                                         67,650   (100%)
+> OK: 800 ms <= t < 1200 ms                                                                                   0     (0%)
+> OK: t >= 1200 ms                                                                                            0     (0%)
+> KO                                                                                                          0     (0%)
+========================================================================================================================
+
+Global: 99th percentile of response time is less than 200.0 : true (actual : 153.0)
+Global: percentage of failed events is less than 1.0 : true (actual : 0.0)

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.instapay.payment.domain.limits.TransferLimitsTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-11-02T16:09:38.730Z" hostname="MacBook-Pro-de-Eduardo.local" time="0.009">
+  <properties/>
+  <testcase name="allowsUpToEachLimitInclusive()" classname="com.instapay.payment.domain.limits.TransferLimitsTest" time="0.0"/>
+  <testcase name="[1] amount=500.01, today=0, tonight=null, code=limit.per_transaction_exceeded" classname="com.instapay.payment.domain.limits.TransferLimitsTest" time="0.002"/>
+  <testcase name="[2] amount=100, today=1900.01, tonight=null, code=limit.daily_exceeded" classname="com.instapay.payment.domain.limits.TransferLimitsTest" time="0.0"/>
+  <testcase name="[3] amount=100, today=0, tonight=900.01, code=limit.nightly_exceeded" classname="com.instapay.payment.domain.limits.TransferLimitsTest" time="0.0"/>
+  <testcase name="[1] perTx=0, daily=1000, nightly=100" classname="com.instapay.payment.domain.limits.TransferLimitsTest" time="0.001"/>
+  <testcase name="[2] perTx=100, daily=1000, nightly=0" classname="com.instapay.payment.domain.limits.TransferLimitsTest" time="0.001"/>
+  <testcase name="[3] perTx=100, daily=0, nightly=100" classname="com.instapay.payment.domain.limits.TransferLimitsTest" time="0.0"/>
+  <testcase name="[4] perTx=1001, daily=1000, nightly=100" classname="com.instapay.payment.domain.limits.TransferLimitsTest" time="0.0"/>
+  <testcase name="[5] perTx=100, daily=1000, nightly=1001" classname="com.instapay.payment.domain.limits.TransferLimitsTest" time="0.0"/>
+  <testcase name="[6] perTx=-1, daily=1000, nightly=100" classname="com.instapay.payment.domain.limits.TransferLimitsTest" time="0.0"/>
+  <testcase name="nightlyLimitIgnoredDuringTheDay()" classname="com.instapay.payment.domain.limits.TransferLimitsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

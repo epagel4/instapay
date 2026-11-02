@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TransferLimits.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">payment-domain</a> &gt; <a href="index.source.html" class="el_package">com.instapay.payment.domain.limits</a> &gt; <span class="el_source">TransferLimits.java</span></div><h1>TransferLimits.java</h1><pre class="source lang-java linenums">package com.instapay.payment.domain.limits;
+
+import com.instapay.payment.domain.shared.DomainException;
+import com.instapay.payment.domain.shared.Money;
+import java.util.Objects;
+import java.util.Optional;
+
+/**
+ * Outgoing transfer limits of an account. The nightly limit caps the total sent during the night
+ * window (20h-6h local time); the daily limit caps the calendar day. Both include the new transfer.
+ */
+public record TransferLimits(Money perTransaction, Money daily, Money nightly) {
+
+<span class="fc" id="L14">  public TransferLimits {</span>
+<span class="fc" id="L15">    Objects.requireNonNull(perTransaction, &quot;perTransaction&quot;);</span>
+<span class="fc" id="L16">    Objects.requireNonNull(daily, &quot;daily&quot;);</span>
+<span class="fc" id="L17">    Objects.requireNonNull(nightly, &quot;nightly&quot;);</span>
+<span class="fc bfc" id="L18" title="All 6 branches covered.">    if (!perTransaction.isPositive() || !daily.isPositive() || !nightly.isPositive()) {</span>
+<span class="fc" id="L19">      throw new DomainException(&quot;limits.invalid&quot;, &quot;Limits must be positive&quot;);</span>
+    }
+<span class="fc bfc" id="L21" title="All 4 branches covered.">    if (perTransaction.isGreaterThan(daily) || nightly.isGreaterThan(daily)) {</span>
+<span class="fc" id="L22">      throw new DomainException(</span>
+          &quot;limits.invalid&quot;, &quot;Per-transaction and nightly limits cannot exceed the daily limit&quot;);
+    }
+<span class="fc" id="L25">  }</span>
+
+  /**
+   * @param spentToday outgoing total already in today's window
+   * @param spentTonight outgoing total already in the current night window; empty during the day
+   */
+  public void check(Money amount, Money spentToday, Optional&lt;Money&gt; spentTonight) {
+<span class="fc bfc" id="L32" title="All 2 branches covered.">    if (amount.isGreaterThan(perTransaction)) {</span>
+<span class="fc" id="L33">      throw new DomainException(</span>
+          &quot;limit.per_transaction_exceeded&quot;, &quot;Above the per-transaction limit of &quot; + perTransaction);
+    }
+<span class="fc bfc" id="L36" title="All 2 branches covered.">    if (spentToday.plus(amount).isGreaterThan(daily)) {</span>
+<span class="fc" id="L37">      throw new DomainException(&quot;limit.daily_exceeded&quot;, &quot;Above the daily limit of &quot; + daily);</span>
+    }
+<span class="fc bfc" id="L39" title="All 4 branches covered.">    if (spentTonight.isPresent() &amp;&amp; spentTonight.get().plus(amount).isGreaterThan(nightly)) {</span>
+<span class="fc" id="L40">      throw new DomainException(&quot;limit.nightly_exceeded&quot;, &quot;Above the nightly limit of &quot; + nightly);</span>
+    }
+<span class="fc" id="L42">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

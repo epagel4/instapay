@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.instapay.payment.domain.shared.MoneyTest" tests="17" skipped="0" failures="0" errors="0" timestamp="2026-11-02T16:09:38.563Z" hostname="MacBook-Pro-de-Eduardo.local" time="0.23">
+  <properties/>
+  <testcase name="bigDecimalRoundTripIsExact" classname="com.instapay.payment.domain.shared.MoneyTest" time="0.021"/>
+  <testcase name="minusUndoesPlusAndNegateSumsToZero" classname="com.instapay.payment.domain.shared.MoneyTest" time="0.022"/>
+  <testcase name="additionIsCommutativeAndAssociative" classname="com.instapay.payment.domain.shared.MoneyTest" time="0.024"/>
+  <testcase name="overflowFailsInsteadOfWrapping()" classname="com.instapay.payment.domain.shared.MoneyTest" time="0.001"/>
+  <testcase name="[1] amount=10, cents=1000" classname="com.instapay.payment.domain.shared.MoneyTest" time="0.001"/>
+  <testcase name="[2] amount=10.5, cents=1050" classname="com.instapay.payment.domain.shared.MoneyTest" time="0.0"/>
+  <testcase name="[3] amount=10.50, cents=1050" classname="com.instapay.payment.domain.shared.MoneyTest" time="0.0"/>
+  <testcase name="[4] amount=0.01, cents=1" classname="com.instapay.payment.domain.shared.MoneyTest" time="0.0"/>
+  <testcase name="[5] amount=-3.20, cents=-320" classname="com.instapay.payment.domain.shared.MoneyTest" time="0.0"/>
+  <testcase name="[6] amount=0, cents=0" classname="com.instapay.payment.domain.shared.MoneyTest" time="0.0"/>
+  <testcase name="comparisonsAndSign()" classname="com.instapay.payment.domain.shared.MoneyTest" time="0.0"/>
+  <testcase name="[1] amount=10.005, mode=HALF_EVEN, cents=1000" classname="com.instapay.payment.domain.shared.MoneyTest" time="0.001"/>
+  <testcase name="[2] amount=10.015, mode=HALF_EVEN, cents=1002" classname="com.instapay.payment.domain.shared.MoneyTest" time="0.001"/>
+  <testcase name="[3] amount=10.005, mode=HALF_UP, cents=1001" classname="com.instapay.payment.domain.shared.MoneyTest" time="0.0"/>
+  <testcase name="[4] amount=10.009, mode=DOWN, cents=1000" classname="com.instapay.payment.domain.shared.MoneyTest" time="0.001"/>
+  <testcase name="rejectsGarbageAndOutOfRange()" classname="com.instapay.payment.domain.shared.MoneyTest" time="0.001"/>
+  <testcase name="rejectsAmountsThatNeedImplicitRounding()" classname="com.instapay.payment.domain.shared.MoneyTest" time="0.001"/>
+  <system-out><![CDATA[timestamp = 2026-11-02T13:09:38.584057, MoneyTest:bigDecimalRoundTripIsExact = 
+                              |-----------------------jqwik-----------------------
+tries = 1000                  | # of calls to property
+checks = 1000                 | # of not rejected calls
+generation = RANDOMIZED       | parameters are randomly generated
+after-failure = SAMPLE_FIRST  | try previously failed sample, then previous seed
+when-fixed-seed = ALLOW       | fixing the random seed is allowed
+edge-cases#mode = MIXIN       | edge cases are mixed in
+edge-cases#total = 9          | # of all combined edge cases
+edge-cases#tried = 9          | # of edge cases tried in current run
+seed = -1220118031660387398   | random seed to reproduce generated values
+
+
+timestamp = 2026-11-02T13:09:38.606386, MoneyTest:minusUndoesPlusAndNegateSumsToZero = 
+                              |-----------------------jqwik-----------------------
+tries = 1000                  | # of calls to property
+checks = 1000                 | # of not rejected calls
+generation = RANDOMIZED       | parameters are randomly generated
+after-failure = SAMPLE_FIRST  | try previously failed sample, then previous seed
+when-fixed-seed = ALLOW       | fixing the random seed is allowed
+edge-cases#mode = MIXIN       | edge cases are mixed in
+edge-cases#total = 81         | # of all combined edge cases
+edge-cases#tried = 76         | # of edge cases tried in current run
+seed = 5843563535663089221    | random seed to reproduce generated values
+
+
+timestamp = 2026-11-02T13:09:38.631146, MoneyTest:additionIsCommutativeAndAssociative = 
+                              |-----------------------jqwik-----------------------
+tries = 1000                  | # of calls to property
+checks = 1000                 | # of not rejected calls
+generation = RANDOMIZED       | parameters are randomly generated
+after-failure = SAMPLE_FIRST  | try previously failed sample, then previous seed
+when-fixed-seed = ALLOW       | fixing the random seed is allowed
+edge-cases#mode = MIXIN       | edge cases are mixed in
+edge-cases#total = 729        | # of all combined edge cases
+edge-cases#tried = 187        | # of edge cases tried in current run
+seed = -2842350415212432097   | random seed to reproduce generated values
+
+
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

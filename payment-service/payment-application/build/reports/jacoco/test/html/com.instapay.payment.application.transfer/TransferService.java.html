@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TransferService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">payment-application</a> &gt; <a href="index.source.html" class="el_package">com.instapay.payment.application.transfer</a> &gt; <span class="el_source">TransferService.java</span></div><h1>TransferService.java</h1><pre class="source lang-java linenums">package com.instapay.payment.application.transfer;
+
+import com.instapay.payment.application.ConflictRetry;
+import com.instapay.payment.application.ResourceNotFoundException;
+import com.instapay.payment.application.limits.LimitService;
+import com.instapay.payment.application.port.out.AccountLocking;
+import com.instapay.payment.application.port.out.AccountRepository;
+import com.instapay.payment.application.port.out.AuditLog;
+import com.instapay.payment.application.port.out.LedgerRepository;
+import com.instapay.payment.application.port.out.SettlementGateway;
+import com.instapay.payment.application.port.out.SettlementSagaRepository;
+import com.instapay.payment.application.port.out.TransactionRunner;
+import com.instapay.payment.application.port.out.TransferRepository;
+import com.instapay.payment.domain.account.Account;
+import com.instapay.payment.domain.account.AccountId;
+import com.instapay.payment.domain.account.AccountRef;
+import com.instapay.payment.domain.ledger.JournalEntry;
+import com.instapay.payment.domain.ledger.JournalEntryId;
+import com.instapay.payment.domain.ledger.JournalEntryType;
+import com.instapay.payment.domain.ledger.SystemAccounts;
+import com.instapay.payment.domain.shared.DomainException;
+import com.instapay.payment.domain.shared.Ispb;
+import com.instapay.payment.domain.shared.Money;
+import com.instapay.payment.domain.transfer.SettlementSaga;
+import com.instapay.payment.domain.transfer.Transfer;
+import com.instapay.payment.domain.transfer.TransferEvent;
+import com.instapay.payment.domain.transfer.TransferId;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+
+/**
+ * Starts transfers. Internal (creditor in this institution): settled synchronously in one commit.
+ * External: funds held in transit and a settlement saga started, in one commit (ADR-005/006).
+ */
+public class TransferService {
+
+<span class="fc" id="L38">  public record TransferCommand(AccountId debtor, AccountRef creditor, Money amount) {}</span>
+
+<span class="fc" id="L40">  public record Settings(</span>
+      Ispb institution, int maxAttempts, Duration settlementTimeout, Duration compensationGrace) {}
+
+  private final AccountRepository accounts;
+  private final AccountLocking locking;
+  private final LedgerRepository ledger;
+  private final TransferRepository transfers;
+  private final SettlementSagaRepository sagas;
+  private final SettlementGateway settlement;
+  private final AuditLog audit;
+  private final LimitService limits;
+  private final TransactionRunner tx;
+  private final Clock clock;
+  private final Settings settings;
+
+  public TransferService(
+      AccountRepository accounts,
+      AccountLocking locking,
+      LedgerRepository ledger,
+      TransferRepository transfers,
+      SettlementSagaRepository sagas,
+      SettlementGateway settlement,
+      AuditLog audit,
+      LimitService limits,
+      TransactionRunner tx,
+      Clock clock,
+<span class="fc" id="L66">      Settings settings) {</span>
+<span class="fc" id="L67">    this.accounts = accounts;</span>
+<span class="fc" id="L68">    this.locking = locking;</span>
+<span class="fc" id="L69">    this.ledger = ledger;</span>
+<span class="fc" id="L70">    this.transfers = transfers;</span>
+<span class="fc" id="L71">    this.sagas = sagas;</span>
+<span class="fc" id="L72">    this.settlement = settlement;</span>
+<span class="fc" id="L73">    this.audit = audit;</span>
+<span class="fc" id="L74">    this.limits = limits;</span>
+<span class="fc" id="L75">    this.tx = tx;</span>
+<span class="fc" id="L76">    this.clock = clock;</span>
+<span class="fc" id="L77">    this.settings = settings;</span>
+<span class="fc" id="L78">  }</span>
+
+  /** Retries only optimistic-lock conflicts; business rule violations fail immediately. */
+  public Transfer transfer(TransferCommand command) {
+<span class="fc" id="L82">    return ConflictRetry.run(</span>
+<span class="fc" id="L83">        settings.maxAttempts(), () -&gt; tx.inTransaction(() -&gt; attempt(command)));</span>
+  }
+
+  public Transfer get(TransferId id) {
+<span class="fc" id="L87">    return transfers</span>
+<span class="fc" id="L88">        .findById(id)</span>
+<span class="fc" id="L89">        .orElseThrow(</span>
+            () -&gt;
+<span class="fc" id="L91">                new ResourceNotFoundException(</span>
+                    &quot;transfer.not_found&quot;, &quot;Transfer &quot; + id + &quot; not found&quot;));
+  }
+
+  private Transfer attempt(TransferCommand command) {
+<span class="fc" id="L96">    Account debtor =</span>
+<span class="fc" id="L97">        locking.loadForDebit(command.debtor()).orElseThrow(() -&gt; accountNotFound(command.debtor()));</span>
+<span class="fc" id="L98">    boolean internal = command.creditor().institution().equals(settings.institution());</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">    if (internal) {</span>
+<span class="fc" id="L100">      accounts</span>
+<span class="fc" id="L101">          .findById(command.creditor().account())</span>
+<span class="fc" id="L102">          .orElseThrow(() -&gt; accountNotFound(command.creditor().account()))</span>
+<span class="fc" id="L103">          .ensureCanCredit();</span>
+    }
+<span class="fc" id="L105">    Instant now = clock.instant();</span>
+    Transfer transfer =
+<span class="fc" id="L107">        Transfer.request(</span>
+<span class="fc" id="L108">            TransferId.newId(), debtor.ref(), command.creditor(), command.amount(), now);</span>
+<span class="fc" id="L109">    debtor.ensureCanDebit();</span>
+<span class="fc" id="L110">    limits.check(debtor.id(), command.amount(), now);</span>
+
+    // Safe only because loadForDebit serialized (or will detect) concurrent debits.
+<span class="fc bfc" id="L113" title="All 2 branches covered.">    if (ledger.balanceOf(debtor.id()).compareTo(command.amount()) &lt; 0) {</span>
+<span class="fc" id="L114">      throw new DomainException(&quot;transfer.insufficient_funds&quot;, &quot;Insufficient funds&quot;);</span>
+    }
+
+<span class="fc bfc" id="L117" title="All 2 branches covered.">    if (internal) {</span>
+<span class="fc" id="L118">      transfer.complete(now);</span>
+<span class="fc" id="L119">      transfers.insert(transfer);</span>
+<span class="fc" id="L120">      post(JournalEntryType.TRANSFER, transfer, debtor.id(), transfer.creditor().account(), now);</span>
+<span class="fc" id="L121">      audit.append(TransferEvent.of(TransferEvent.Type.COMPLETED, transfer, null, now));</span>
+    } else {
+<span class="fc" id="L123">      transfers.insert(transfer);</span>
+<span class="fc" id="L124">      post(</span>
+          JournalEntryType.EXTERNAL_TRANSFER,
+          transfer,
+<span class="fc" id="L127">          debtor.id(),</span>
+          SystemAccounts.SETTLEMENT_IN_TRANSIT,
+          now);
+<span class="fc" id="L130">      SettlementSaga saga =</span>
+<span class="fc" id="L131">          SettlementSaga.start(</span>
+<span class="fc" id="L132">              transfer.id(), now, settings.settlementTimeout(), settings.compensationGrace());</span>
+<span class="fc" id="L133">      sagas.insert(saga);</span>
+<span class="fc" id="L134">      settlement.requestSettlement(transfer, saga.settlementExpiresAt());</span>
+<span class="fc" id="L135">      audit.append(TransferEvent.of(TransferEvent.Type.SETTLEMENT_REQUESTED, transfer, null, now));</span>
+    }
+<span class="fc" id="L137">    locking.confirmDebit(debtor);</span>
+<span class="fc" id="L138">    return transfer;</span>
+  }
+
+  private void post(JournalEntryType type, Transfer t, AccountId from, AccountId to, Instant now) {
+<span class="fc" id="L142">    ledger.append(</span>
+<span class="fc" id="L143">        JournalEntry.move(JournalEntryId.newId(), type, t.id().value(), from, to, t.amount(), now));</span>
+<span class="fc" id="L144">  }</span>
+
+  private static ResourceNotFoundException accountNotFound(AccountId id) {
+<span class="fc" id="L147">    return new ResourceNotFoundException(&quot;account.not_found&quot;, &quot;Account &quot; + id + &quot; not found&quot;);</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>
